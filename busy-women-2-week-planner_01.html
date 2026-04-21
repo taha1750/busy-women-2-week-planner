@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>2-Week Planner — Women 40+ (Busy Schedule)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #1a1523;
+      --muted: #5b5470;
+      --card: rgba(255, 255, 255, 0.92);
+      --card-solid: #ffffff;
+      --border: rgba(120, 90, 200, 0.12);
+      --glow-pink: #ff4d8d;
+      --glow-coral: #ff7a59;
+      --glow-gold: #ffc93c;
+      --glow-mint: #1dd3b0;
+      --glow-sky: #3db8ff;
+      --glow-violet: #9b6bff;
+      --glow-rose: #ff5c87;
+      --radius: 16px;
+      --shadow: 0 12px 40px rgba(45, 20, 90, 0.12);
+      --shadow-hover: 0 18px 50px rgba(45, 20, 120, 0.18);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Nunito", system-ui, -apple-system, sans-serif;
+      color: var(--ink);
+      line-height: 1.58;
+      min-height: 100vh;
+      background:
+        radial-gradient(1200px 800px at 10% -10%, rgba(255, 120, 180, 0.35), transparent 55%),
+        radial-gradient(900px 700px at 95% 0%, rgba(120, 200, 255, 0.4), transparent 50%),
+        radial-gradient(800px 600px at 50% 100%, rgba(160, 255, 200, 0.25), transparent 45%),
+        linear-gradient(165deg, #fff5fb 0%, #f0f4ff 35%, #e8fffa 100%);
+      background-attachment: fixed;
+    }
+    header {
+      position: relative;
+      overflow: hidden;
+      padding: 2rem 1.35rem 2.35rem;
+      color: #fff;
+      background:
+        linear-gradient(125deg, rgba(255, 255, 255, 0.15) 0%, transparent 40%),
+        linear-gradient(135deg, #7c3aed 0%, #db2777 38%, #f97316 72%, #fbbf24 100%);
+      box-shadow: 0 20px 60px rgba(124, 58, 237, 0.35);
+    }
+    header::before {
+      content: "";
+      position: absolute;
+      inset: -40% -20% auto -20%;
+      height: 120%;
+      background: radial-gradient(circle at 30% 40%, rgba(255,255,255,0.35), transparent 55%);
+      pointer-events: none;
+    }
+    header::after {
+      content: "";
+      position: absolute;
+      right: -5%;
+      bottom: -35%;
+      width: 55%;
+      height: 85%;
+      background: radial-gradient(circle, rgba(255,255,255,0.2), transparent 65%);
+      pointer-events: none;
+    }
+    .header-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-bottom: 0.65rem;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-family: "Outfit", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.65rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(8px);
+    }
+    header h1 {
+      margin: 0 0 0.55rem;
+      font-family: "Outfit", sans-serif;
+      font-size: clamp(1.35rem, 4vw, 1.85rem);
+      font-weight: 800;
+      line-height: 1.2;
+      text-shadow: 0 2px 24px rgba(0, 0, 0, 0.15);
+    }
+    header p {
+      margin: 0;
+      max-width: 38rem;
+      font-size: 0.98rem;
+      opacity: 0.96;
+      font-weight: 600;
+    }
+    .wrap {
+      max-width: 920px;
+      margin: -1.25rem auto 0;
+      padding: 0 1rem 3rem;
+      position: relative;
+      z-index: 2;
+    }
+    .disclaimer {
+      border-radius: var(--radius);
+      padding: 1rem 1.15rem;
+      font-size: 0.88rem;
+      color: #7c2d12;
+      margin-bottom: 1.35rem;
+      border: 2px solid transparent;
+      background-color: #fff4e0;
+      background-image:
+        linear-gradient(135deg, #fff9e6 0%, #ffe8f0 100%),
+        linear-gradient(120deg, #fbbf24, #fb7185, #a78bfa);
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
+      box-shadow: var(--shadow);
+    }
+    .disclaimer strong { color: #9a3412; }
+    .grid-tools {
+      display: grid;
+      gap: 1.1rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (min-width: 700px) {
+      .grid-tools { grid-template-columns: 1fr 1fr; }
+    }
+    .card {
+      position: relative;
+      background: var(--card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.15rem 1.2rem 1.2rem;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    @media (hover: hover) {
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+      }
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 1.25rem;
+      right: 1.25rem;
+      height: 4px;
+      border-radius: 0 0 8px 8px;
+      opacity: 0.95;
+    }
+    .card--hydration::before {
+      background: linear-gradient(90deg, #38bdf8, #22d3ee, #818cf8);
+    }
+    .card--track::before {
+      background: linear-gradient(90deg, #f472b6, #c084fc, #fb923c);
+    }
+    .card--plan::before {
+      background: linear-gradient(90deg, #34d399, #2dd4bf, #60a5fa);
+    }
+    .card--refs::before {
+      background: linear-gradient(90deg, #a78bfa, #ec4899, #f97316);
+    }
+    .card h2 {
+      margin: 0 0 0.7rem;
+      font-family: "Outfit", sans-serif;
+      font-size: 1.12rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #6d28d9, #db2777, #ea580c);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .card--hydration h2 { background: linear-gradient(90deg, #0369a1, #0891b2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .card--track h2 { background: linear-gradient(90deg, #be185d, #7c3aed); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    label { font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 2px solid rgba(167, 139, 250, 0.25);
+      border-radius: 12px;
+      margin-top: 0.3rem;
+      font-size: 1rem;
+      font-family: inherit;
+      background: rgba(255, 255, 255, 0.85);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #a78bfa;
+      box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.2);
+    }
+    .hydration {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.85rem;
+      margin-top: 0.55rem;
+    }
+    .big-num {
+      font-family: "Outfit", sans-serif;
+      font-size: 2.35rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #0284c7, #6366f1);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      min-width: 3ch;
+      line-height: 1;
+    }
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 12px;
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      font-family: "Outfit", sans-serif;
+      letter-spacing: 0.02em;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    }
+    button:active { transform: scale(0.97); }
+    .btn-water {
+      color: #fff;
+      background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.45);
+    }
+    .btn-water:hover { filter: brightness(1.06); box-shadow: 0 8px 26px rgba(14, 165, 233, 0.5); }
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.9);
+      color: #4f46e5;
+      border: 2px solid rgba(99, 102, 241, 0.35);
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.12);
+    }
+    .btn-ghost:hover { background: #eef2ff; }
+    .evidence {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 0.85rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(236, 72, 153, 0.06), rgba(99, 102, 241, 0.06));
+    }
+    .evidence strong { color: var(--ink); }
+    .section-heading {
+      font-family: "Outfit", sans-serif;
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin: 0 0 1rem;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .section-heading span {
+      background: linear-gradient(100deg, #7c3aed, #ec4899, #f97316);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .section-heading .spark {
+      font-size: 1.5rem;
+      filter: drop-shadow(0 2px 4px rgba(236, 72, 153, 0.4));
+    }
+    details.day {
+      --day-bar: #a78bfa;
+      --day-glow: rgba(167, 139, 250, 0.35);
+      background: var(--card-solid);
+      border: 1px solid rgba(124, 58, 237, 0.1);
+      border-radius: var(--radius);
+      margin-bottom: 0.75rem;
+      overflow: hidden;
+      box-shadow: 0 8px 28px rgba(88, 28, 135, 0.08);
+      transition: box-shadow 0.2s ease;
+    }
+    details.day[open] {
+      box-shadow: 0 14px 40px rgba(124, 58, 237, 0.14);
+    }
+    details.day.accent-1 { --day-bar: var(--glow-pink); --day-glow: rgba(255, 77, 141, 0.35); }
+    details.day.accent-2 { --day-bar: var(--glow-coral); --day-glow: rgba(255, 122, 89, 0.35); }
+    details.day.accent-3 { --day-bar: var(--glow-gold); --day-glow: rgba(255, 201, 60, 0.45); }
+    details.day.accent-4 { --day-bar: var(--glow-mint); --day-glow: rgba(29, 211, 176, 0.35); }
+    details.day.accent-5 { --day-bar: var(--glow-sky); --day-glow: rgba(61, 184, 255, 0.35); }
+    details.day.accent-6 { --day-bar: var(--glow-violet); --day-glow: rgba(155, 107, 255, 0.35); }
+    details.day.accent-7 { --day-bar: var(--glow-rose); --day-glow: rgba(255, 92, 135, 0.35); }
+    details.day summary {
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 1rem 1.1rem;
+      font-family: "Outfit", sans-serif;
+      font-weight: 700;
+      font-size: 1.02rem;
+      color: #312e81;
+      background: linear-gradient(105deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.75) 50%, color-mix(in srgb, var(--day-bar) 14%, white) 100%);
+      border-left: 5px solid var(--day-bar);
+    }
+    details.day summary::-webkit-details-marker { display: none; }
+    details.day[open] summary {
+      border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+      box-shadow: 0 8px 24px var(--day-glow);
+    }
+    details.day summary::after {
+      content: "▸";
+      font-size: 0.85rem;
+      color: var(--day-bar);
+      transition: transform 0.25s ease;
+      flex-shrink: 0;
+    }
+    details.day[open] summary::after { transform: rotate(90deg); }
+    .day-body {
+      padding: 1rem 1.1rem 1.15rem;
+      background: linear-gradient(180deg, rgba(250, 250, 255, 0.9) 0%, #fff 28%);
+    }
+    .slot {
+      display: grid;
+      grid-template-columns: 5.75rem 1fr;
+      gap: 0.55rem 0.85rem;
+      padding: 0.62rem 0;
+      border-bottom: 1px dashed rgba(124, 58, 237, 0.12);
+      font-size: 0.93rem;
+    }
+    .slot:last-of-type { border-bottom: none; }
+    .time {
+      font-family: "Outfit", sans-serif;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.88rem;
+      color: #fff;
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+      padding: 0.35rem 0.5rem;
+      border-radius: 10px;
+      text-align: center;
+      align-self: start;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+    }
+    details.day.accent-1 .time { background: linear-gradient(135deg, #db2777, #f472b6); box-shadow: 0 4px 12px rgba(219, 39, 119, 0.35); }
+    details.day.accent-2 .time { background: linear-gradient(135deg, #ea580c, #fb923c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.35); }
+    details.day.accent-3 .time { background: linear-gradient(135deg, #ca8a04, #facc15); color: #422006; box-shadow: 0 4px 12px rgba(202, 138, 4, 0.35); }
+    details.day.accent-4 .time { background: linear-gradient(135deg, #0d9488, #34d399); box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35); }
+    details.day.accent-5 .time { background: linear-gradient(135deg, #0284c7, #38bdf8); box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35); }
+    details.day.accent-6 .time { background: linear-gradient(135deg, #6d28d9, #a78bfa); box-shadow: 0 4px 12px rgba(109, 40, 217, 0.35); }
+    details.day.accent-7 .time { background: linear-gradient(135deg, #e11d48, #fb7185); box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35); }
+    .pill {
+      display: inline-block;
+      font-family: "Outfit", sans-serif;
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.28rem 0.55rem;
+      border-radius: 999px;
+      background: linear-gradient(120deg, #fef3c7, #fce7f3);
+      color: #9d174d;
+      margin-left: 0.35rem;
+      vertical-align: middle;
+      border: 1px solid rgba(236, 72, 153, 0.25);
+    }
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-top: 1rem;
+      padding: 0.75rem 0.85rem;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #3730a3;
+      background: linear-gradient(120deg, rgba(224, 231, 255, 0.9), rgba(252, 231, 243, 0.85));
+      border: 1px solid rgba(129, 140, 248, 0.25);
+    }
+    .check-row input[type="checkbox"] {
+      width: 1.15rem;
+      height: 1.15rem;
+      accent-color: #7c3aed;
+      cursor: pointer;
+    }
+    footer {
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #6b21a8;
+      padding: 1.5rem 1rem 2rem;
+      background: linear-gradient(180deg, transparent, rgba(167, 139, 250, 0.12));
+    }
+    a {
+      color: #7c3aed;
+      font-weight: 700;
+      text-decoration: none;
+      border-bottom: 2px solid rgba(167, 139, 250, 0.45);
+      transition: color 0.15s, border-color 0.15s;
+    }
+    a:hover {
+      color: #db2777;
+      border-bottom-color: rgba(236, 72, 153, 0.6);
+    }
+    .card--refs ul li { margin-bottom: 0.35rem; }
+    @supports not (color: color-mix(in srgb, white, black)) {
+      details.day summary {
+        background: linear-gradient(105deg, #fff 0%, #faf5ff 100%);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .card, button, details.day summary::after { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="badge-row">
+        <span class="hero-badge">14 days</span>
+        <span class="hero-badge">Meals + moves</span>
+        <span class="hero-badge">Hydration</span>
+      </div>
+      <h1>Busy women 40+ — 2-week lifestyle planner</h1>
+      <p>Timed meals, movement blocks, and hydration — built around habits that research ties to sustainable weight management (no prescription medicines).</p>
+      <p style="margin-top:0.6rem;font-size:0.92rem;opacity:0.9;font-weight:500;">You don't need a perfect week — you need a consistent one. Every small choice stacks up. You've got this. 💪</p>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="disclaimer">
+      <strong>Important:</strong> This page is for education and organization only. It is not medical advice. If you have a health condition, pain, dizziness, or questions about diet or exercise, speak with a qualified clinician before changing your routine.
+    </div>
+
+    <div class="grid-tools">
+      <div class="card card--hydration">
+        <h2>Today’s hydration</h2>
+        <p style="margin:0 0 0.5rem;font-size:0.9rem;color:var(--muted);">A practical target for many adults is roughly <strong>2–2.5 L</strong> of fluids daily from drinks + water-rich foods, adjusted for heat and activity. Tap <strong>+1 cup</strong> (250 ml) each time you drink.</p>
+        <div class="hydration">
+          <span class="big-num" id="mlTotal">0</span>
+          <span style="color:var(--muted);">ml today</span>
+          <button type="button" class="btn-water" id="addCup">+1 cup (250 ml)</button>
+          <button type="button" class="btn-ghost" id="resetH">Reset day</button>
+        </div>
+        <div style="margin-top:0.75rem;">
+          <div style="height:10px;border-radius:999px;background:rgba(120,180,255,0.18);overflow:hidden;">
+            <div id="hydrationBar" style="height:100%;width:0%;background:linear-gradient(90deg,#38bdf8,#6366f1);border-radius:999px;transition:width 0.4s ease;"></div>
+          </div>
+          <p id="hydrationMsg" style="margin:0.4rem 0 0;font-size:0.82rem;color:#0369a1;font-weight:600;min-height:1.2em;"></p>
+        </div>
+        <p class="evidence" style="margin-bottom:0;">
+          <strong>Why it matters:</strong> steady fluids support energy, digestion, and exercise tolerance — especially when you add more movement or higher-fiber meals.
+        </p>
+      </div>
+
+      <div class="card card--track">
+        <h2>Quick tracking</h2>
+        <label for="weight">Weight (optional, same time of day)</label>
+        <input type="text" id="weight" placeholder="e.g. 72.4 kg — Mondays only" autocomplete="off" />
+        <label for="notes" style="margin-top:0.65rem;display:block;">🌟 One win today — big or small!</label>
+        <input type="text" id="notes" placeholder="Walked at lunch, chose water over soda, got 7h sleep…" autocomplete="off" />
+        <p class="evidence" style="margin-bottom:0;">
+          <strong>Evidence angle:</strong> reviews in peri/postmenopausal women find <strong>diet changes</strong> move the scale most; adding <strong>exercise</strong> improves body composition. Short programs (weeks, not years) can still produce measurable results when nutrition + activity are combined. <em>Tracking even one daily win reinforces the habit loop.</em>
+        </p>
+      </div>
+    </div>
+
+    <div class="card card--plan" style="margin-bottom:1.25rem;">
+      <h2>How this 2-week plan is structured (for busy schedules)</h2>
+      <ul style="margin:0;padding-left:1.15rem;font-size:0.92rem;color:var(--muted);">
+        <li><strong>Protein at each meal</strong> — helps fullness and lean mass when calories are moderate.</li>
+        <li><strong>Two movement “anchors”</strong> — one brisk walk (or stairs) + one <strong>resistance</strong> block weekly pattern; matches findings that <strong>diet + resistance or mixed training</strong> tends to protect muscle while reducing fat.</li>
+        <li><strong>15–25 minute workouts</strong> — realistic on packed days; repeat or swap times if mornings are impossible.</li>
+        <li><strong>Meals are simple</strong> — batch-cook proteins/grains on Sunday &amp; Wednesday evenings if you can (30–40 min).</li>
+      </ul>
+    </div>
+
+    <h2 class="section-heading"><span class="spark">✦</span> <span>Your 14-day schedule</span></h2>
+
+    <div class="card" style="margin-bottom:1.25rem;background:linear-gradient(135deg,rgba(240,249,255,0.97),rgba(245,240,255,0.97));border:1.5px solid rgba(99,102,241,0.2);">
+      <h2 style="margin-bottom:0.75rem;">📖 How to use this planner</h2>
+      <div style="display:grid;gap:0.75rem;font-size:0.92rem;color:var(--muted);line-height:1.7;">
+
+        <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+          <span style="font-size:1.3rem;flex-shrink:0;">1️⃣</span>
+          <div><strong style="color:var(--ink);">Open each day by clicking it.</strong> Days are collapsed by default so the page stays clean. Tap or click the day row to expand the full schedule for that day.</div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+          <span style="font-size:1.3rem;flex-shrink:0;">2️⃣</span>
+          <div><strong style="color:var(--ink);">Follow the time slots as a guide — not a strict timetable.</strong> Each slot shows a suggested time (e.g. 7:15, 12:30). Shift any slot 1–2 hours to fit your actual day. The order matters more than the exact clock time.</div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+          <span style="font-size:1.3rem;flex-shrink:0;">3️⃣</span>
+          <div><strong style="color:var(--ink);">Log your water with the +1 Cup button.</strong> Every time you finish a glass or bottle, tap it. The progress bar at the top fills toward your 2L daily goal and updates with an encouraging message.</div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+          <span style="font-size:1.3rem;flex-shrink:0;">4️⃣</span>
+          <div><strong style="color:var(--ink);">Record your weight once a week (optional).</strong> Monday morning, same time, before eating. Type it into the weight field. You don't need to track daily — weekly trends are what matter.</div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+          <span style="font-size:1.3rem;flex-shrink:0;">5️⃣</span>
+          <div><strong style="color:var(--ink);">Write one win in the daily notes field.</strong> It can be tiny — "drank water before coffee," "did the 12-min walk," "chose salad." This habit rewires how you see yourself over 14 days.</div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+          <span style="font-size:1.3rem;flex-shrink:0;">6️⃣</span>
+          <div><strong style="color:var(--ink);">Check the box at the bottom of each day when done.</strong> A toast message will pop up to celebrate. Your progress saves automatically in your browser — it will still be there if you close the tab.</div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+          <span style="font-size:1.3rem;flex-shrink:0;">7️⃣</span>
+          <div><strong style="color:var(--ink);">Swap meals freely if needed.</strong> Not feeling the Day 6 lunch? Use any other day's lunch instead — the principles (protein + veg + whole grain) stay the same. No meal is sacred.</div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+          <span style="font-size:1.3rem;flex-shrink:0;">8️⃣</span>
+          <div><strong style="color:var(--ink);">Prioritise the strength sessions above all else.</strong> If your day goes sideways, skip the walk before you skip the resistance block. Muscle preservation is the biggest return on investment for women 40+.</div>
+        </div>
+
+        <div style="background:linear-gradient(135deg,rgba(236,72,153,0.07),rgba(99,102,241,0.07));border-radius:12px;padding:0.75rem 1rem;margin-top:0.25rem;">
+          <strong style="color:var(--ink);">⚡ Batch cooking tip:</strong> <span>On Saturday (Day 6) and Wednesday (Day 10), a 25–40 min batch cook is built in. Cook extra protein, a grain, and chop vegetables. This single habit cuts your weeknight cooking to under 10 minutes.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1.25rem;background:linear-gradient(135deg,rgba(255,240,250,0.97),rgba(240,245,255,0.97));border:1.5px solid rgba(236,72,153,0.18);">
+      <h2 style="margin-bottom:0.5rem;">💡 How to make this work for real life</h2>
+      <ul style="margin:0;padding-left:1.15rem;font-size:0.92rem;color:var(--muted);line-height:1.8;">
+        <li><strong>Miss a day? Just start the next one.</strong> Progress isn't linear — one off-day changes nothing.</li>
+        <li><strong>Times are suggestions, not rules.</strong> Shift any slot by 1–2 hours if your schedule needs it.</li>
+        <li><strong>Swap freely within a day.</strong> Don't like the Day 4 lunch? Use Day 2's instead. Same proteins, same principles.</li>
+        <li><strong>Celebrate the small stuff.</strong> Drinking your morning water, choosing stairs, prepping lunch the night before — these are all wins worth noting.</li>
+        <li><strong>Strength sessions are the priority</strong> — if you only do one thing, do the resistance block. It protects muscle and boosts metabolism over time.</li>
+      </ul>
+    </div>
+
+    <!-- Days generated below: Week 1 -->
+    <details class="day accent-1" open>
+      <summary>Day 1 — Monday <span class="pill">start</span></summary>
+      <div class="day-body">
+        <div class="slot"><span class="time">6:45</span><div><strong>Water</strong> — 1 cup before coffee or tea.</div></div>
+        <div class="slot"><span class="time">7:15</span><div><strong>Breakfast</strong> — Greek yogurt (200 g) + berries + 2 tbsp oats; coffee/tea.</div></div>
+        <div class="slot"><span class="time">8:00</span><div><strong>Movement</strong> — 12 min brisk walk or 8 flights stairs (break into 2×6 min if needed).</div></div>
+        <div class="slot"><span class="time">12:30</span><div><strong>Lunch</strong> — large salad: greens, chickpeas or grilled chicken, olive oil + lemon, whole-grain bread slice.</div></div>
+        <div class="slot"><span class="time">15:00</span><div><strong>Snack</strong> — apple + 10 almonds + water.</div></div>
+        <div class="slot"><span class="time">18:30</span><div><strong>Strength</strong> — 20 min: squats, push-ups (incline OK), row with band/dumbbells, plank — 3 rounds, comfortable pace.</div></div>
+        <div class="slot"><span class="time">19:15</span><div><strong>Dinner</strong> — baked fish or tofu, big portion vegetables, small portion brown rice or potatoes.</div></div>
+        <div class="slot"><span class="time">21:00</span><div><strong>Wind-down</strong> — herbal tea; set tomorrow’s lunch in containers.</div></div>
+        <div class="check-row"><input type="checkbox" id="d1" data-day="1" /> <label for="d1">Day 1 complete — you started! That's the hardest part. ✅</label></div>
+      </div>
+    </details>
+
+    <details class="day accent-2">
+      <summary>Day 2 — Tuesday</summary>
+      <div class="day-body">
+        <div class="slot"><span class="time">6:45</span><div><strong>Water</strong> — 1 cup.</div></div>
+        <div class="slot"><span class="time">7:10</span><div><strong>Breakfast</strong> — 2 eggs + whole-grain toast + tomato/cucumber.</div></div>
+        <div class="slot"><span class="time">12:15</span><div><strong>Walk</strong> — 15 min after eating (phone calls = multitask).</div></div>
+        <div class="slot"><span class="time">12:45</span><div><strong>Lunch</strong> — lentil soup + side salad + yogurt.</div></div>
+        <div class="slot"><span class="time">16:00</span><div><strong>Snack</strong> — cottage cheese or skyr + cinnamon.</div></div>
+        <div class="slot"><span class="time">18:45</span><div><strong>Dinner</strong> — turkey/chicken stir-fry: lots of veg, light soy, ½ cup cooked noodles or quinoa.</div></div>
+        <div class="slot"><span class="time">20:00</span><div><strong>Mobility</strong> — 10 min hips/shoulders stretch before screens.</div></div>
+        <div class="check-row"><input type="checkbox" id="d2" data-day="2" /> <label for="d2">Day 2 done — two days in a row builds momentum. 🔥</label></div>
+      </div>
+    </details>
+
+    <details class="day accent-3">
+      <summary>Day 3 — Wednesday</summary>
+      <div class="day-body">
+        <div class="slot"><span class="time">6:50</span><div><strong>Water</strong> — 1 cup.</div></div>
+        <div class="slot"><span class="time">7:00</span><div><strong>Breakfast</strong> — protein smoothie: milk or fortified soy, banana, spinach, peanut butter 1 tbsp, protein powder if you use it.</div></div>
+        <div class="slot"><span class="time">8:00</span><div><strong>Strength</strong> — 18 min full body (dumbbells/bands): goblet squat, overhead press, deadlift pattern, plank.</div></div>
+        <div class="slot"><span class="time">12:30</span><div><strong>Lunch</strong> — grain bowl: quinoa, beans, feta light, greens, olive oil.</div></div>
+        <div class="slot"><span class="time">15:30</span><div><strong>Snack</strong> — carrots + hummus.</div></div>
+        <div class="slot"><span class="time">19:00</span><div><strong>Dinner</strong> — chili (lean beef or extra beans) + side green salad.</div></div>
+        <div class="check-row"><input type="checkbox" id="d3" data-day="3" /> <label for="d3">Day 3 complete — you're already ahead of where you were Monday. 💪</label></div>
+      </div>
+    </details>
+
+    <details class="day accent-4">
+      <summary>Day 4 — Thursday</summary>
+      <div class="day-body">
+        <div class="slot"><span class="time">6:45</span><div><strong>Water</strong> — 1 cup.</div></div>
+        <div class="slot"><span class="time">7:15</span><div><strong>Breakfast</strong> — overnight oats: oats, chia, milk, berries.</div></div>
+        <div class="slot"><span class="time">12:20</span><div><strong>Walk</strong> — 18 min brisk.</div></div>
+        <div class="slot"><span class="time">12:50</span><div><strong>Lunch</strong> — sushi bowl: brown rice, salmon or tofu, edamame, seaweed, cucumber.</div></div>
+        <div class="slot"><span class="time">16:30</span><div><strong>Snack</strong> — pear + string cheese.</div></div>
+        <div class="slot"><span class="time">18:30</span><div><strong>Dinner</strong> — sheet-pan chicken thighs + broccoli + sweet potato (one pan, 35 min).</div></div>
+        <div class="check-row"><input type="checkbox" id="d4" data-day="4" /> <label for="d4">Day 4 done — over halfway through the week! 🌟</label></div>
+      </div>
+    </details>
+
+    <details class="day accent-5">
+      <summary>Day 5 — Friday</summary>
+      <div class="day-body">
+        <div class="slot"><span class="time">6:45</span><div><strong>Water</strong> — 1 cup.</div></div>
+        <div class="slot"><span class="time">7:10</span><div><strong>Breakfast</strong> — whole-grain cereal + milk + handful walnuts.</div></div>
+        <div class="slot"><span class="time">12:30</span><div><strong>Lunch</strong> — falafel bowl (baked) or chicken shawarma bowl: greens, tahini-light dressing.</div></div>
+        <div class="slot"><span class="time">17:30</span><div><strong>Snack</strong> — protein bar (simple ingredients) or boiled eggs ×2.</div></div>
+        <div class="slot"><span class="time">18:15</span><div><strong>Intervals (optional)</strong> — 12 min: 1 min brisk / 1 min easy repeat — only if joints feel good.</div></div>
+        <div class="slot"><span class="time">19:00</span><div><strong>Dinner</strong> — shrimp or tofu tacos: corn tortillas, cabbage slaw, salsa, avocado thin slice.</div></div>
+        <div class="check-row"><input type="checkbox" id="d5" data-day="5" /> <label for="d5">Day 5 — Friday done! You showed up all week. Enjoy your weekend. 🎉</label></div>
+      </div>
+    </details>
+
+    <details class="day accent-6">
+      <summary>Day 6 — Saturday <span class="pill">batch cook</span></summary>
+      <div class="day-body">
+        <div class="slot"><span class="time">8:30</span><div><strong>Water</strong> — 2 cups across the morning.</div></div>
+        <div class="slot"><span class="time">9:00</span><div><strong>Breakfast</strong> — veggie omelet + fruit.</div></div>
+        <div class="slot"><span class="time">10:00</span><div><strong>Walk</strong> — 25–40 min outdoors or treadmill podcast time.</div></div>
+        <div class="slot"><span class="time">11:30</span><div><strong>Batch</strong> — cook 2 proteins + 1 grain + chop 3 vegetables for the week ahead.</div></div>
+        <div class="slot"><span class="time">13:00</span><div><strong>Lunch</strong> — leftovers bowl.</div></div>
+        <div class="slot"><span class="time">17:00</span><div><strong>Strength</strong> — 25 min: heavier lifts if you know form; otherwise repeat Day 1 circuit with slower tempo.</div></div>
+        <div class="slot"><span class="time">19:00</span><div><strong>Dinner</strong> — lean beef or bean burgers (no bun or open-face) + big salad.</div></div>
+        <div class="check-row"><input type="checkbox" id="d6" data-day="6" /> <label for="d6">Day 6 — batch cook done = easier week ahead. Future you says thank you! 🥗</label></div>
+      </div>
+    </details>
+
+    <details class="day accent-7">
+      <summary>Day 7 — Sunday <span class="pill">recovery</span></summary>
+      <div class="day-body">
+        <div class="slot"><span class="time">9:00</span><div><strong>Breakfast</strong> — yogurt parfait + nuts.</div></div>
+        <div class="slot"><span class="time">10:30</span><div><strong>Easy movement</strong> — 20–30 min gentle walk + light stretching.</div></div>
+        <div class="slot"><span class="time">12:30</span><div><strong>Lunch</strong> — soup + sandwich (whole grain, lean protein, lots of veg).</div></div>
+        <div class="slot"><span class="time">16:00</span><div><strong>Snack</strong> — tea + fruit.</div></div>
+        <div class="slot"><span class="time">18:00</span><div><strong>Dinner</strong> — roast chicken or baked white fish + roasted vegetables.</div></div>
+        <div class="slot"><span class="time">20:30</span><div><strong>Plan</strong> — glance at Week 2; grocery list 10 lines max.</div></div>
+        <div class="check-row"><input type="checkbox" id="d7" data-day="7" /> <label for="d7">Week 1 complete! One full week of showing up for yourself. ✨</label></div>
+      </div>
+    </details>
+
+    <!-- Week 2 -->
+    <details class="day accent-1">
+      <summary>Day 8 — Monday <span class="pill">week 2</span></summary>
+      <div class="day-body">
+        <div class="slot"><span class="time">6:45</span><div><strong>Water</strong> — 1 cup.</div></div>
+        <div class="slot"><span class="time">7:15</span><div><strong>Breakfast</strong> — ricotta or cottage cheese on whole-grain toast + tomato + basil.</div></div>
+        <div class="slot"><span class="time">8:00</span><div><strong>Movement</strong> — 15 min stairs or incline walk.</div></div>
+        <div class="slot"><span class="time">12:30</span><div><strong>Lunch</strong> — tuna or chickpea salad (yogurt-mayo style) in lettuce cups + whole-grain crackers.</div></div>
+        <div class="slot"><span class="time">15:30</span><div><strong>Snack</strong> — edamame + water.</div></div>
+        <div class="slot"><span class="time">18:30</span><div><strong>Strength</strong> — 22 min: split squat, chest press, single-arm row, side plank — 3 rounds.</div></div>
+        <div class="slot"><span class="time">19:15</span><div><strong>Dinner</strong> — pasta (measured portion) + turkey meatballs + marinara + side salad.</div></div>
+        <div class="check-row"><input type="checkbox" id="d8" data-day="8" /> <label for="d8">Day 8 done — Week 2 is underway. You know what to do. 💥</label></div>
+      </div>
+    </details>
+
+    <details class="day accent-2">
+      <summary>Day 9 — Tuesday</summary>
+      <div class="day-body">
+        <div class="slot"><span class="time">6:45</span><div><strong>Water</strong> — 1 cup.</div></div>
+        <div class="slot"><span class="time">7:10</span><div><strong>Breakfast</strong> — peanut butter toast + banana + milk/calcium drink.</div></div>
+        <div class="slot"><span class="time">12:15</span><div><strong>Walk</strong> — 16 min after lunch.</div></div>
+        <div class="slot"><span class="time">12:45</span><div><strong>Lunch</strong> — burrito bowl: brown rice, black beans, salsa, greens, grilled veg, chicken or sofritas.</div></div>
+        <div class="slot"><span class="time">16:00</span><div><strong>Snack</strong> — kefir or yogurt drink.</div></div>
+        <div class="slot"><span class="time">18:45</span><div><strong>Dinner</strong> — baked salmon, asparagus, small potato.</div></div>
+        <div class="slot"><span class="time">20:00</span><div><strong>Mobility</strong> — 10 min.</div></div>
+        <div class="check-row"><input type="checkbox" id="d9" data-day="9" /> <label for="d9">Day 9 complete — notice what's feeling more natural now? 🧘</label></div>
+      </div>
+    </details>
+
+    <details class="day accent-3">
+      <summary>Day 10 — Wednesday <span class="pill">mini-batch</span></summary>
+      <div class="day-body">
+        <div class="slot"><span class="time">6:50</span><div><strong>Water</strong> — 1 cup.</div></div>
+        <div class="slot"><span class="time">7:00</span><div><strong>Breakfast</strong> — same smoothie template as Day 3 (swap fruit).</div></div>
+        <div class="slot"><span class="time">8:00</span><div><strong>Strength</strong> — 20 min circuit: reverse lunge, push-up, band pull-apart, dead-bug core.</div></div>
+        <div class="slot"><span class="time">12:30</span><div><strong>Lunch</strong> — minestrone + sprinkle parmesan + apple.</div></div>
+        <div class="slot"><span class="time">18:00</span><div><strong>Batch</strong> — 25 min: roast tray of vegetables + cook extra chicken/tofu.</div></div>
+        <div class="slot"><span class="time">19:00</span><div><strong>Dinner</strong> — stir-fry using pre-cut veg + tofu + brown rice.</div></div>
+        <div class="check-row"><input type="checkbox" id="d10" data-day="10" /> <label for="d10">Day 10 done — mini-batch complete. You're building real habits now. 🏗️</label></div>
+      </div>
+    </details>
+
+    <details class="day accent-4">
+      <summary>Day 11 — Thursday</summary>
+      <div class="day-body">
+        <div class="slot"><span class="time">6:45</span><div><strong>Water</strong> — 1 cup.</div></div>
+        <div class="slot"><span class="time">7:15</span><div><strong>Breakfast</strong> — muesli + milk + berries.</div></div>
+        <div class="slot"><span class="time">10:00</span><div><strong>Snack</strong> — small handful of mixed nuts + piece of fruit or a boiled egg — keeps energy steady before the lunch walk.</div></div>
+        <div class="slot"><span class="time">12:20</span><div><strong>Walk</strong> — 20 min brisk.</div></div>
+        <div class="slot"><span class="time">12:55</span><div><strong>Lunch</strong> — caprese chicken salad: mozzarella light, tomato, basil, balsamic, greens.</div></div>
+        <div class="slot"><span class="time">16:30</span><div><strong>Snack</strong> — trail mix (small handful) + water.</div></div>
+        <div class="slot"><span class="time">18:30</span><div><strong>Dinner</strong> — turkey meatballs + zucchini noodles or whole-wheat spaghetti + side salad.</div></div>
+        <div class="check-row"><input type="checkbox" id="d11" data-day="11" /> <label for="d11">Day 11 — only 3 days left. You're in the home stretch! 🏃‍♀️</label></div>
+      </div>
+    </details>
+
+    <details class="day accent-5">
+      <summary>Day 12 — Friday</summary>
+      <div class="day-body">
+        <div class="slot"><span class="time">6:45</span><div><strong>Water</strong> — 1 cup.</div></div>
+        <div class="slot"><span class="time">7:10</span><div><strong>Breakfast</strong> — egg muffin cups (meal-prep) + orange.</div></div>
+        <div class="slot"><span class="time">12:30</span><div><strong>Lunch</strong> — poke-style bowl: greens, brown rice, raw salmon or cooked shrimp, cucumber, sesame.</div></div>
+        <div class="slot"><span class="time">17:15</span><div><strong>Snack</strong> — protein yogurt.</div></div>
+        <div class="slot"><span class="time">18:00</span><div><strong>Movement</strong> — 14 min dance / brisk walk — fun counts.</div></div>
+        <div class="slot"><span class="time">19:00</span><div><strong>Dinner</strong> — homemade pizza: thin whole-grain crust, veg toppings, controlled cheese.</div></div>
+        <div class="check-row"><input type="checkbox" id="d12" data-day="12" /> <label for="d12">Day 12 — Friday again. You've come so far. Rest up and be proud. 🌈</label></div>
+      </div>
+    </details>
+
+    <details class="day accent-6">
+      <summary>Day 13 — Saturday</summary>
+      <div class="day-body">
+        <div class="slot"><span class="time">8:30</span><div><strong>Water</strong> — 2 cups morning.</div></div>
+        <div class="slot"><span class="time">9:00</span><div><strong>Breakfast</strong> — avocado toast (½ avocado) + egg + greens.</div></div>
+        <div class="slot"><span class="time">10:00</span><div><strong>Walk/hike</strong> — 35–50 min if schedule allows; else 2×15 min.</div></div>
+        <div class="slot"><span class="time">13:00</span><div><strong>Lunch</strong> — Niçoise-style salad: tuna, beans, eggs, greens, potato small.</div></div>
+        <div class="slot"><span class="time">17:00</span><div><strong>Strength</strong> — 25 min full body — try slightly harder than Week 1 if form is solid.</div></div>
+        <div class="slot"><span class="time">19:00</span><div><strong>Dinner</strong> — lean steak or portobello + chimichurri + grilled veg.</div></div>
+        <div class="check-row"><input type="checkbox" id="d13" data-day="13" /> <label for="d13">Day 13 done — one more sleep. You showed up for yourself all week. 🌙</label></div>
+      </div>
+    </details>
+
+    <details class="day accent-7">
+      <summary>Day 14 — Sunday <span class="pill">reflect</span></summary>
+      <div class="day-body">
+        <div class="slot"><span class="time">9:00</span><div><strong>Breakfast</strong> — pancakes (whole-grain mix) + berries + yogurt instead of syrup flood.</div></div>
+        <div class="slot"><span class="time">10:30</span><div><strong>Easy walk</strong> — 25 min + gratitude note: what felt sustainable?</div></div>
+        <div class="slot"><span class="time">12:30</span><div><strong>Lunch</strong> — loaded baked potato: broccoli, chili or beans, small cheese, side salad.</div></div>
+        <div class="slot"><span class="time">16:00</span><div><strong>Snack</strong> — fruit + tea.</div></div>
+        <div class="slot"><span class="time">18:00</span><div><strong>Dinner</strong> — coconut curry vegetables + shrimp or chickpeas + small portion rice.</div></div>
+        <div class="slot"><span class="time">20:00</span><div><strong>Next steps</strong> — repeat favorite week-1–2 meals; keep 2 strength + 3 walk anchors weekly.</div></div>
+        <div class="check-row"><input type="checkbox" id="d14" data-day="14" /> <label for="d14">🎊 ALL 14 DAYS COMPLETE! You did it. Now keep going — the habits are yours. 🎊</label></div>
+      </div>
+    </details>
+
+    <div class="card card--refs" style="margin-top:1.25rem;">
+      <h2>Reading list (the papers this planner echoes)</h2>
+      <ul style="margin:0;font-size:0.9rem;color:var(--muted);padding-left:1.1rem;">
+        <li><a href="https://pubmed.ncbi.nlm.nih.gov/33350666/" target="_blank" rel="noopener">Thomson et al., 2021</a> — premenopausal vs postmenopausal weight-loss trials.</li>
+        <li><a href="https://pubmed.ncbi.nlm.nih.gov/29533366/" target="_blank" rel="noopener">Cheng et al., 2018</a> — diet vs exercise vs combined in peri/postmenopausal women.</li>
+        <li><a href="https://pubmed.ncbi.nlm.nih.gov/27641543/" target="_blank" rel="noopener">Batsis et al., 2017</a> — lifestyle trials in older adults with obesity.</li>
+        <li><a href="https://pubmed.ncbi.nlm.nih.gov/37028708/" target="_blank" rel="noopener">Eglseer et al., 2023</a> — nutrition + exercise mixes near retirement age (body composition).</li>
+        <li><a href="https://pubmed.ncbi.nlm.nih.gov/38573796/" target="_blank" rel="noopener">Rotunda et al., 2024</a> — shorter nutrition + activity programs still move weight.</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>
+    Offline-friendly single file · Data saves in this browser only (localStorage) · Built for busy women who deserve to feel strong 💜
+  </footer>
+
+  <script>
+    (function () {
+      var KEY_W = "wlPlanner_weight";
+      var KEY_N = "wlPlanner_notes";
+      var KEY_D = "wlPlanner_days";
+
+      function todayKey() {
+        return "wlPlanner_ml_" + new Date().toISOString().slice(0, 10);
+      }
+
+      var mlEl = document.getElementById("mlTotal");
+      var addBtn = document.getElementById("addCup");
+      var resetBtn = document.getElementById("resetH");
+      var wEl = document.getElementById("weight");
+      var nEl = document.getElementById("notes");
+      var hydrationBar = document.getElementById("hydrationBar");
+      var hydrationMsg = document.getElementById("hydrationMsg");
+
+      var GOAL_ML = 2000; // 2L target (lower end of 2–2.5L range)
+
+      var hydrationMessages = [
+        { threshold: 0,    msg: "Ready to start? First cup makes a real difference. 💧" },
+        { threshold: 250,  msg: "Great start! Your body is already thanking you. 🌊" },
+        { threshold: 500,  msg: "500 ml in — keep it up! Try to sip steadily through the day." },
+        { threshold: 750,  msg: "Solid progress! You're 3 cups in. 💪" },
+        { threshold: 1000, msg: "Halfway to your goal! You're on track. ⭐" },
+        { threshold: 1250, msg: "More than halfway — feeling more energised? Keep going!" },
+        { threshold: 1500, msg: "1.5 L! Almost there. Two more cups to hit your goal. 🎯" },
+        { threshold: 1750, msg: "So close! One more cup gets you to your goal. 🥤" },
+        { threshold: 2000, msg: "Goal reached! 2 L down — excellent work today. 🎉" },
+      ];
+
+      function updateHydrationUI(ml) {
+        mlEl.textContent = String(ml);
+        var pct = Math.min(100, Math.round((ml / GOAL_ML) * 100));
+        hydrationBar.style.width = pct + "%";
+        // Find the right message
+        var msg = hydrationMessages[0].msg;
+        for (var i = hydrationMessages.length - 1; i >= 0; i--) {
+          if (ml >= hydrationMessages[i].threshold) { msg = hydrationMessages[i].msg; break; }
+        }
+        hydrationMsg.textContent = msg;
+      }
+
+      function readMl() {
+        var k = todayKey();
+        var v = localStorage.getItem(k);
+        return v ? parseInt(v, 10) || 0 : 0;
+      }
+      function writeMl(n) {
+        localStorage.setItem(todayKey(), String(n));
+        updateHydrationUI(n);
+      }
+      updateHydrationUI(readMl());
+
+      addBtn.addEventListener("click", function () {
+        writeMl(readMl() + 250);
+      });
+      resetBtn.addEventListener("click", function () {
+        writeMl(0);
+      });
+
+      if (localStorage.getItem(KEY_W)) wEl.value = localStorage.getItem(KEY_W);
+      if (localStorage.getItem(KEY_N)) nEl.value = localStorage.getItem(KEY_N);
+      wEl.addEventListener("change", function () {
+        localStorage.setItem(KEY_W, wEl.value);
+      });
+      nEl.addEventListener("change", function () {
+        localStorage.setItem(KEY_N, nEl.value);
+      });
+
+      var savedDays = {};
+      try {
+        savedDays = JSON.parse(localStorage.getItem(KEY_D) || "{}") || {};
+      } catch (e) {
+        savedDays = {};
+      }
+
+      document.querySelectorAll('input[type="checkbox"][data-day]').forEach(function (cb) {
+        var id = cb.getAttribute("data-day");
+        if (savedDays[id]) cb.checked = true;
+        cb.addEventListener("change", function () {
+          savedDays[id] = cb.checked;
+          localStorage.setItem(KEY_D, JSON.stringify(savedDays));
+
+          // Count completed days
+          var total = Object.values(savedDays).filter(Boolean).length;
+
+          // Show a toast message
+          showToast(cb.checked, id, total);
+        });
+      });
+
+      function showToast(checked, dayId, totalDone) {
+        var existing = document.getElementById("plannerToast");
+        if (existing) existing.remove();
+
+        var toast = document.createElement("div");
+        toast.id = "plannerToast";
+        var msg = "";
+        if (!checked) {
+          toast.style.cssText = "position:fixed;bottom:1.5rem;right:1.5rem;background:#fff;border:2px solid #e0e7ff;border-radius:16px;padding:1rem 1.25rem;box-shadow:0 12px 40px rgba(99,102,241,0.18);font-family:'Outfit',sans-serif;font-size:0.95rem;font-weight:700;color:#4f46e5;z-index:9999;max-width:280px;animation:slideIn 0.3s ease;";
+          msg = "No worries — every day is a fresh start. 💙";
+        } else if (dayId === "14") {
+          toast.style.cssText = "position:fixed;bottom:1.5rem;right:1.5rem;background:linear-gradient(135deg,#7c3aed,#db2777);border-radius:16px;padding:1rem 1.25rem;box-shadow:0 12px 40px rgba(124,58,237,0.4);font-family:'Outfit',sans-serif;font-size:1rem;font-weight:800;color:#fff;z-index:9999;max-width:300px;animation:slideIn 0.3s ease;text-align:center;";
+          msg = "🎊 14/14 COMPLETE!\nYou are incredible.\nNow keep these habits — they belong to you! 🎊";
+        } else {
+          toast.style.cssText = "position:fixed;bottom:1.5rem;right:1.5rem;background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:2px solid rgba(52,211,153,0.35);border-radius:16px;padding:1rem 1.25rem;box-shadow:0 12px 40px rgba(52,211,153,0.2);font-family:'Outfit',sans-serif;font-size:0.92rem;font-weight:700;color:#065f46;z-index:9999;max-width:260px;animation:slideIn 0.3s ease;";
+          msg = "✅ Day " + dayId + " done! " + totalDone + "/14 days complete.";
+        }
+        toast.style.whiteSpace = "pre-line";
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(function () {
+          toast.style.transition = "opacity 0.5s ease";
+          toast.style.opacity = "0";
+          setTimeout(function () { toast.remove(); }, 500);
+        }, dayId === "14" ? 5000 : 3000);
+      }
+
+      // Add slideIn keyframe once
+      var styleEl = document.createElement("style");
+      styleEl.textContent = "@keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }";
+      document.head.appendChild(styleEl);
+    })();
+  </script>
+</body>
+</html>
