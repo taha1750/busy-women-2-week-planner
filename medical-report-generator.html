@@ -89,6 +89,36 @@
   .r-sign div { border-top: 1px solid #333; padding-top: 4px; font-size: 10.5px; min-height: 60px; }
   .r-foot { margin-top: 14px; font-size: 9.5px; color: #666; border-top: 1px solid #ccc; padding-top: 4px; display: flex; justify-content: space-between; }
   .r-empty { color: #999; font-style: italic; }
+  .lab-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .lab-toolbar .spacer { flex: 1; }
+  .lab-panel { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; background: #fbfcfd; }
+  .lab-title { font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  table.lab td.tname { padding-top: 7px; white-space: nowrap; }
+  table.lab td.ref { padding-top: 7px; color: var(--muted); white-space: nowrap; font-size: 12px; }
+  table.lab th.labcol input { font-weight: 600; font-size: 12px; text-align: center; min-width: 84px; }
+  table.lab .cell { display: flex; align-items: center; gap: 3px; }
+  table.lab .cell input { min-width: 70px; text-align: right; }
+  table.lab .flag { width: 22px; font-size: 11px; font-weight: 700; }
+  .fl-H, .fl-HH { background: #fdecec !important; color: var(--err); font-weight: 700; }
+  .fl-L, .fl-LL { background: #e8f0fd !important; color: #1f4fa3; font-weight: 700; }
+  .fl-HH, .fl-LL { outline: 2px solid var(--err); }
+  .fl-A { background: var(--warn-bg) !important; color: var(--warn); font-weight: 700; }
+  .cell:has(.fl-H) .flag, .cell:has(.fl-HH) .flag { color: var(--err); }
+  .cell:has(.fl-L) .flag, .cell:has(.fl-LL) .flag { color: #1f4fa3; }
+  .analysis { margin-top: 10px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .analysis ul { margin: 0; padding-left: 18px; }
+  .analysis li { margin: 3px 0; }
+  .analysis li.info { color: var(--muted); }
+  #refsDlg table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  #refsDlg td, #refsDlg th { padding: 2px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+  #refsDlg input { margin: 0; padding: 3px 5px; width: 90px; }
+  #refsDlg tr.cur { background: var(--soft); }
+  .rf-H, .rf-HH, .rf-A { color: #b00000; }
+  .rf-L, .rf-LL { color: #1f4fa3; }
+  .r-legend { font-size: 9.5px; color: #555; margin-top: 2px; }
+  ol.r-analysis { margin: 2px 0 6px; padding-left: 18px; }
+  ol.r-analysis li { margin: 2px 0; }
+  ol.r-refs { margin: 2px 0; padding-left: 18px; font-size: 10px; color: #333; }
 
   @media (max-width: 640px) {
     .r-kv { grid-template-columns: 1fr; }
@@ -101,7 +131,7 @@
     main { padding: 0; max-width: none; }
     #preview { display: block !important; }
     #report { border: 0; box-shadow: none; padding: 0; max-width: none; }
-    .r-sec h3, table.r th, table.r tr.cat td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .r-sec h3, table.r th, table.r tr.cat td, .rf-H, .rf-L, .rf-HH, .rf-LL, .rf-A { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 </head>
@@ -197,13 +227,19 @@
     </div>
 
     <div class="card">
+      <h2><span class="grow">Investigations &amp; analysis</span></h2>
+      <p class="hint">Type the <b>values only</b>. Standard reference ranges for the patient's age and sex are built in; results outside the range are flagged (L / H, LL / HH critical) and interpreted automatically. Panels appear for the tests billed on the invoice — tick “Show all tests” for others.</p>
+      <div id="labsHost"></div>
+    </div>
+
+    <div class="card">
       <h2><span class="grow">Clinical summary</span><button class="small" id="btnDraft" title="Fill empty fields with a draft built from diagnoses and charges">✎ Auto-draft empty fields</button></h2>
       <p class="hint">Auto-draft only writes into empty boxes and marks clinical facts it cannot know with “[ ]”. The treating physician must review every field before signing.</p>
       <div class="grid">
         <div class="wide"><label>Chief complaint / reason for admission<textarea data-k="clinical.complaint"></textarea></label></div>
         <div class="wide"><label>History of present illness<textarea data-k="clinical.history"></textarea></label></div>
         <div class="wide"><label>Examination findings on admission (vitals, hydration, abdomen…)<textarea data-k="clinical.exam"></textarea></label></div>
-        <div class="wide"><label>Key investigation results<textarea data-k="clinical.results"></textarea></label></div>
+        <div class="wide"><label>Other investigation notes (free text, optional)<textarea data-k="clinical.results"></textarea></label></div>
         <div class="wide"><label>Hospital course &amp; treatment<textarea data-k="clinical.course" style="min-height:100px"></textarea></label></div>
         <div class="wide"><label>Medical necessity statement<textarea data-k="clinical.necessity" style="min-height:100px"></textarea></label></div>
         <div><label>Condition at discharge<textarea data-k="clinical.discharge"></textarea></label></div>
@@ -237,6 +273,7 @@
         <div><label>Prepared by<input data-k="report.preparedBy" /></label></div>
         <div><label>Itemization in report<select data-k="report.detail"><option value="full">Full line items</option><option value="summary">Category totals only</option></select></label></div>
         <div><label>Report language note / remarks<input data-k="report.remarks" /></label></div>
+        <div class="wide"><label>References printed in the report (one per line)<textarea data-k="report.references" style="min-height:110px"></textarea></label></div>
       </div>
     </div>
   </div>
@@ -264,6 +301,18 @@
   </div>
 </dialog>
 
+<dialog id="refsDlg">
+  <h3 style="margin-top:0">Reference ranges (normal standards)</h3>
+  <p class="hint">Grey values are the built-in standard intervals. Type a value only where your laboratory uses a different interval — it is saved in this browser and used for every patient. The highlighted rows apply to the current patient. Critical (LL/HH) thresholds use the default units.</p>
+  <div style="max-height:60vh;overflow:auto"><table><thead><tr><th>Panel</th><th>Test</th><th>Age / sex</th><th>Low</th><th>High</th><th>Unit</th></tr></thead><tbody id="refsBody"></tbody></table></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+    <button class="danger" id="refsReset">Reset all to standard</button>
+    <span style="flex:1"></span>
+    <button onclick="document.getElementById('refsDlg').close()">Cancel</button>
+    <button class="primary" id="refsSave">Save ranges</button>
+  </div>
+</dialog>
+
 <script>
 "use strict";
 const STORE_KEY = "medicalReportGenerator.case.v1";
@@ -279,11 +328,12 @@ function blankCase() {
     clinical: { complaint: "", history: "", exam: "", results: "", course: "", necessity: "", discharge: "", dischargeMeds: "", followUp: "" },
     sections: [],
     settlement: { discount: "", nonCovered: "", deductible: "", copayPct: "", paidByPatient: "" },
-    report: { date: new Date().toISOString().slice(0, 10), preparedBy: "", detail: "full", remarks: "" }
+    labs: { cols: ["Admission", "Day 3", "Discharge"], v: {}, micro: {}, studies: {}, showAll: false, comment: "" },
+    report: { date: new Date().toISOString().slice(0, 10), preparedBy: "", detail: "full", remarks: "", references: DEFAULT_REFERENCES }
   };
 }
 
-let state = load() || blankCase();
+let state; // initialised at start-up, after all modules are defined
 
 /* ---------- helpers ---------- */
 const $ = (s, el = document) => el.querySelector(s);
@@ -342,7 +392,7 @@ function merge(base, data) {
 function bindFields() {
   document.querySelectorAll("[data-k]").forEach(el => {
     el.value = getPath(state, el.dataset.k) ?? "";
-    el.oninput = () => { setPath(state, el.dataset.k, el.value); changed(false); };
+    el.oninput = () => { setPath(state, el.dataset.k, el.value); if (/^patient\.(dob|sex)$|^encounter\.admit$/.test(el.dataset.k)) renderLabs(); changed(false); };
   });
 }
 
@@ -421,6 +471,7 @@ function renderSections() {
     box.querySelector('[data-a="down"]').onclick = () => { if (si < state.sections.length - 1) { [state.sections[si + 1], state.sections[si]] = [state.sections[si], state.sections[si + 1]]; renderSections(); changed(); } };
     host.appendChild(box);
   });
+  if ($("#labsHost")) renderLabs();
 }
 
 function renderTotals() {
@@ -455,6 +506,443 @@ const RATIONALE = [
   { items: /\b(99221|99222|99223)\b/, dx: /./, text: () => `Inpatient admission was required due to severity of illness and need for IV therapy and monitoring.` }
 ];
 
+/* ---------- investigations: catalog with standard reference intervals ---------- */
+// Each range band applies to ages [min, max) in years, optionally to one sex ("M"/"F").
+// Values are typical paediatric/adult intervals; each laboratory can replace them under "Reference ranges".
+const B = (min, max, low, high, sex) => ({ min, max, low, high, sex });
+const ALL = (low, high) => [B(0, 200, low, high)];
+const POSNEG = ["Negative", "Trace", "1+", "2+", "3+"];
+const LAB_PANELS = [
+  { id: "vitals", title: "Vital signs", always: true, tests: [
+    { id: "temp", name: "Temperature", unit: "°C", r: ALL(36.5, 37.5), cl: 35, ch: 40 },
+    { id: "hr", name: "Heart rate", unit: "bpm", r: [B(1, 6, 80, 140), B(6, 12, 70, 120), B(12, 200, 60, 100)], cl: 40, ch: 180 },
+    { id: "rr", name: "Respiratory rate", unit: "/min", r: [B(1, 6, 20, 30), B(6, 12, 18, 25), B(12, 200, 12, 20)], ch: 40 },
+    { id: "sbp", name: "Systolic BP", unit: "mmHg", r: [B(1, 6, 90, 110), B(6, 12, 97, 120), B(12, 18, 110, 131), B(18, 200, 90, 129)], cl: 70, ch: 180 },
+    { id: "dbp", name: "Diastolic BP", unit: "mmHg", r: [B(1, 6, 55, 75), B(6, 12, 57, 80), B(12, 18, 64, 83), B(18, 200, 60, 84)], ch: 120 },
+    { id: "spo2", name: "SpO₂ (room air)", unit: "%", r: ALL(95, 100), cl: 90 },
+    { id: "wt", name: "Body weight", unit: "kg", r: [] }
+  ] },
+  { id: "cbc", title: "Complete blood count", codes: /\b8502[57]\b/, tests: [
+    { id: "wbc", name: "WBC", unit: "×10⁹/L", r: [B(1, 6, 5.0, 15.5), B(6, 12, 4.5, 13.5), B(12, 18, 4.5, 13.0), B(18, 200, 4.0, 11.0)], cl: 2, ch: 30 },
+    { id: "anc", name: "Neutrophils (absolute)", unit: "×10⁹/L", r: [B(1, 6, 1.5, 8.5), B(6, 18, 1.8, 8.0), B(18, 200, 2.0, 7.5)], cl: 0.5 },
+    { id: "alc", name: "Lymphocytes (absolute)", unit: "×10⁹/L", r: [B(1, 6, 2.0, 8.0), B(6, 12, 1.5, 6.5), B(12, 18, 1.2, 5.2), B(18, 200, 1.0, 4.8)] },
+    { id: "hb", name: "Haemoglobin", unit: "g/dL", r: [B(1, 6, 11.0, 14.0), B(6, 12, 11.5, 15.5), B(12, 18, 12.0, 16.0, "F"), B(12, 18, 13.0, 16.0, "M"), B(18, 200, 12.0, 15.5, "F"), B(18, 200, 13.5, 17.5, "M")], cl: 7, ch: 20 },
+    { id: "hct", name: "Haematocrit", unit: "%", r: [B(1, 6, 33, 42), B(6, 12, 35, 45), B(12, 18, 36, 46, "F"), B(12, 18, 37, 49, "M"), B(18, 200, 36, 46, "F"), B(18, 200, 41, 53, "M")], cl: 20, ch: 60 },
+    { id: "mcv", name: "MCV", unit: "fL", r: [B(1, 6, 70, 86), B(6, 12, 77, 95), B(12, 18, 78, 98), B(18, 200, 80, 100)] },
+    { id: "plt", name: "Platelets", unit: "×10⁹/L", r: ALL(150, 450), cl: 50, ch: 1000 }
+  ] },
+  { id: "chem", title: "Chemistry — electrolytes, renal & liver", codes: /\b8005[34]\b|\b80048\b|\b80069\b/, tests: [
+    { id: "na", name: "Sodium", unit: "mmol/L", r: ALL(135, 145), cl: 120, ch: 160 },
+    { id: "k", name: "Potassium", unit: "mmol/L", r: ALL(3.5, 5.0), cl: 2.5, ch: 6.5 },
+    { id: "cl", name: "Chloride", unit: "mmol/L", r: ALL(98, 107) },
+    { id: "hco3", name: "Bicarbonate (total CO₂)", unit: "mmol/L", r: [B(1, 18, 20, 28), B(18, 200, 22, 29)], cl: 10, ch: 40 },
+    { id: "bun", name: "Urea nitrogen (BUN)", unit: "mg/dL", r: [B(1, 18, 5, 18), B(18, 200, 7, 20)], ch: 100 },
+    { id: "cr", name: "Creatinine", unit: "mg/dL", r: [B(1, 6, 0.2, 0.5), B(6, 12, 0.3, 0.7), B(12, 18, 0.5, 1.0), B(18, 200, 0.6, 1.1, "F"), B(18, 200, 0.7, 1.3, "M")] },
+    { id: "glu", name: "Glucose", unit: "mg/dL", r: ALL(70, 110), cl: 40, ch: 400 },
+    { id: "ca", name: "Calcium (total)", unit: "mg/dL", r: [B(1, 18, 8.8, 10.8), B(18, 200, 8.6, 10.2)], cl: 6.5, ch: 13 },
+    { id: "tp", name: "Total protein", unit: "g/dL", r: [B(1, 18, 6.0, 8.0), B(18, 200, 6.0, 8.3)] },
+    { id: "alb", name: "Albumin", unit: "g/dL", r: [B(1, 18, 3.8, 5.4), B(18, 200, 3.5, 5.0)] },
+    { id: "tbil", name: "Total bilirubin", unit: "mg/dL", r: ALL(0.2, 1.2) },
+    { id: "alt", name: "ALT", unit: "U/L", r: [B(1, 18, 5, 30), B(18, 200, 7, 56)] },
+    { id: "ast", name: "AST", unit: "U/L", r: [B(1, 18, 15, 40), B(18, 200, 10, 40)] },
+    { id: "alp", name: "Alkaline phosphatase", unit: "U/L", r: [B(1, 12, 150, 420), B(12, 18, 70, 390), B(18, 200, 44, 147)] }
+  ] },
+  { id: "minerals", title: "Magnesium & phosphorus", codes: /\b83735\b|\b84100\b/, tests: [
+    { id: "mg", name: "Magnesium", unit: "mg/dL", r: [B(1, 18, 1.7, 2.3), B(18, 200, 1.7, 2.4)], cl: 1.0, ch: 4.9 },
+    { id: "phos", name: "Phosphorus", unit: "mg/dL", r: [B(1, 12, 3.7, 5.6), B(12, 18, 2.9, 5.1), B(18, 200, 2.5, 4.5)], cl: 1.0 }
+  ] },
+  { id: "inflam", title: "Inflammation, perfusion & pancreas", codes: /\b86140\b|\b83605\b|\b83690\b|\b84145\b/, tests: [
+    { id: "crp", name: "C-reactive protein", unit: "mg/L", r: ALL(0, 5) },
+    { id: "lact", name: "Lactate", unit: "mmol/L", r: ALL(0.5, 2.2), ch: 4 },
+    { id: "lip", name: "Lipase", unit: "U/L", r: ALL(13, 60) }
+  ] },
+  { id: "coag", title: "Coagulation", codes: /\b85610\b|\b85730\b/, tests: [
+    { id: "pt", name: "Prothrombin time", unit: "sec", r: ALL(11.0, 13.5) },
+    { id: "inr", name: "INR", unit: "", r: ALL(0.8, 1.2), ch: 4.5 },
+    { id: "aptt", name: "aPTT", unit: "sec", r: ALL(25, 35), ch: 100 }
+  ] },
+  { id: "cardiac", title: "Cardiac markers", codes: /\b84484\b|\b83880\b|\b8455[0-3]\b/, tests: [
+    { id: "trop", name: "Troponin I", unit: "ng/mL", r: ALL(0, 0.04) },
+    { id: "bnp", name: "BNP", unit: "pg/mL", r: ALL(0, 100) }
+  ] },
+  { id: "ua", title: "Urinalysis", codes: /\b8100[0-3]\b/, tests: [
+    { id: "usg", name: "Specific gravity", unit: "", r: ALL(1.005, 1.030), dp: 3 },
+    { id: "uph", name: "pH", unit: "", r: ALL(4.5, 8.0) },
+    { id: "uket", name: "Ketones", qual: POSNEG, normal: ["Negative"] },
+    { id: "uprot", name: "Protein", qual: POSNEG, normal: ["Negative", "Trace"] },
+    { id: "uglu", name: "Glucose", qual: POSNEG, normal: ["Negative"] },
+    { id: "ublood", name: "Blood", qual: POSNEG, normal: ["Negative"] },
+    { id: "ule", name: "Leukocyte esterase", qual: POSNEG, normal: ["Negative"] },
+    { id: "unit", name: "Nitrite", qual: ["Negative", "Positive"], normal: ["Negative"] },
+    { id: "uwbc", name: "WBC", unit: "/HPF", r: ALL(0, 5) },
+    { id: "urbc", name: "RBC", unit: "/HPF", r: ALL(0, 2) }
+  ] }
+];
+const MICRO = [
+  { id: "bcx", name: "Blood culture", codes: /\b8704[01]\b/ },
+  { id: "scx", name: "Stool culture", codes: /\b8704[56]\b/ },
+  { id: "gipcr", name: "GI pathogen panel (PCR)", codes: /\b8750[5-7]\b/ },
+  { id: "cdiff", name: "C. difficile toxin / PCR", codes: /\b87493\b|\b87324\b/ },
+  { id: "onp", name: "Ova & parasites", codes: /\b8717[7]\b|\b87209\b/ },
+  { id: "ucx", name: "Urine culture", codes: /\b8708[68]\b/ }
+];
+const MICRO_RESULTS = ["", "Pending", "Negative / no growth", "Positive"];
+const STUDIES = [
+  { id: "ecg", name: "ECG (12-lead)", codes: /\b9300[0-5]\b|\b93010\b/ },
+  { id: "echo", name: "Echocardiogram", codes: /\b9330[6-8]\b/ },
+  { id: "ct", name: "CT abdomen & pelvis", codes: /\b7417[6-8]\b|\b7415[0-2]\b|\b7416[0-2]\b/ },
+  { id: "cxr", name: "Chest X-ray", codes: /\b7104[5-8]\b|\b7101[01]\b|\b7102[0-2]\b/ },
+  { id: "us", name: "Ultrasound abdomen", codes: /\b7670[05]\b/ }
+];
+// Organism → more specific ICD-10 code than "unspecified food poisoning".
+const ORGANISMS = [
+  [/salmonella/i, "A02.0", "Salmonella enteritis"], [/shigella/i, "A03.9", "Shigellosis"],
+  [/campylobacter/i, "A04.5", "Campylobacter enteritis"], [/o157|stec|ehec|shiga/i, "A04.3", "Enterohaemorrhagic E. coli infection"],
+  [/etec|enterotoxigenic/i, "A04.1", "Enterotoxigenic E. coli infection"], [/epec|enteropathogenic/i, "A04.0", "Enteropathogenic E. coli infection"],
+  [/e\.?\s*coli/i, "A04.4", "Other intestinal E. coli infection"], [/difficile/i, "A04.7", "Enterocolitis due to C. difficile"],
+  [/yersinia/i, "A04.6", "Yersinia enteritis"], [/norovirus|norwalk/i, "A08.1", "Norovirus gastroenteropathy"],
+  [/rotavirus/i, "A08.0", "Rotaviral enteritis"], [/adenovirus/i, "A08.2", "Adenoviral enteritis"],
+  [/giardia/i, "A07.1", "Giardiasis"], [/cryptosporid/i, "A07.2", "Cryptosporidiosis"], [/entamoeba|amoeb/i, "A06.0", "Acute amoebic dysentery"],
+  [/staph.*aureus|s\.\s*aureus/i, "A05.0", "Foodborne staphylococcal intoxication"], [/bacillus cereus|b\.\s*cereus/i, "A05.4", "Foodborne B. cereus intoxication"],
+  [/perfringens/i, "A05.2", "Foodborne C. perfringens intoxication"], [/parahaemolyticus|parahemolyticus/i, "A05.3", "Foodborne V. parahaemolyticus intoxication"],
+  [/cholerae/i, "A00.9", "Cholera"]
+];
+const TESTS = {};
+LAB_PANELS.forEach(p => p.tests.forEach(t => { t.panel = p.id; TESTS[t.id] = t; }));
+
+const DEFAULT_REFERENCES = [
+  "Laboratory reference intervals: typical age- and sex-specific paediatric and adult intervals (e.g. The Harriet Lane Handbook, 23rd ed., Elsevier 2023; Tietz Textbook of Laboratory Medicine, 7th ed., Elsevier 2022). Where the performing laboratory's own analyser-specific intervals differ, the laboratory's intervals apply.",
+  "Diagnosis coding: WHO International Statistical Classification of Diseases and Related Health Problems, 10th Revision (ICD-10).",
+  "Procedure and supply coding: CPT® (American Medical Association) and HCPCS Level II (CMS); revenue codes per NUBC UB-04 conventions.",
+  "Dehydration assessment and rehydration: WHO. The treatment of diarrhoea — a manual for physicians and other senior health workers, 4th rev. Geneva: WHO; 2005.",
+  "Infectious diarrhoea work-up and antimicrobial use: Shane AL, et al. 2017 IDSA Clinical Practice Guidelines for the Diagnosis and Management of Infectious Diarrhea. Clin Infect Dis. 2017;65(12):e45–e80."
+].join("\n");
+
+/* ---------- reference-range overrides (this hospital's own standards, kept in this browser) ---------- */
+const REF_KEY = "medicalReportGenerator.refs.v1";
+let refOverrides = {};
+try { refOverrides = JSON.parse(localStorage.getItem(REF_KEY) || "{}") || {}; } catch (e) { refOverrides = {}; }
+const saveRefs = () => { try { localStorage.setItem(REF_KEY, JSON.stringify(refOverrides)); } catch (e) {} };
+const has = v => v !== undefined && v !== null && String(v).trim() !== "";
+
+function bandIndex(t) {
+  if (!t.r || !t.r.length) return -1;
+  const age = ageAt(state.patient.dob, state.encounter.admit);
+  const a = age ?? 30;
+  const sx = (state.patient.sex || "").charAt(0).toUpperCase();
+  let i = t.r.findIndex(b => a >= b.min && a < b.max && (!b.sex || !sx || b.sex === sx));
+  if (i < 0) i = a < t.r[0].min ? 0 : t.r.length - 1;
+  return i;
+}
+function refFor(t) {
+  const i = bandIndex(t);
+  if (i < 0) return null;
+  const o = refOverrides[`${t.id}|${i}`] || {};
+  return { idx: i, low: has(o.low) ? +o.low : t.r[i].low, high: has(o.high) ? +o.high : t.r[i].high, unit: has(o.unit) ? o.unit : t.unit, custom: has(o.low) || has(o.high) || has(o.unit) };
+}
+const fmtN = (v, t) => (t && t.dp ? (+v).toFixed(t.dp) : String(+v));
+const decs = v => (String(v).split(".")[1] || "").length;
+const refText = t => {
+  if (t.qual) return t.normal.join(" / ");
+  const r = refFor(t); if (!r) return "";
+  const d = t.dp ?? Math.max(decs(r.low), decs(r.high));
+  return `${(+r.low).toFixed(d)} – ${(+r.high).toFixed(d)}`;
+};
+const unitOf = t => (refFor(t)?.unit ?? t.unit ?? "");
+const parseVal = v => parseFloat(String(v ?? "").replace(/[<>≤≥,\s]/g, ""));
+function flagOf(t, v) {
+  if (!has(v)) return "";
+  if (t.qual) return t.normal.includes(v) ? "N" : "A";
+  const r = refFor(t), n = parseVal(v);
+  if (!r || isNaN(n)) return "";
+  if (t.cl != null && n < t.cl) return "LL";
+  if (t.ch != null && n > t.ch) return "HH";
+  if (n < r.low) return "L";
+  if (n > r.high) return "H";
+  return "N";
+}
+const FLAG_TEXT = { L: "Low", H: "High", LL: "Critical low", HH: "Critical high", A: "Abnormal", N: "" };
+
+/* ---------- investigations data access ---------- */
+function labsState() {
+  state.labs ??= {};
+  const L = state.labs;
+  L.cols ??= ["Admission", "Day 3", "Discharge"];
+  L.v ??= {}; L.micro ??= {}; L.studies ??= {}; L.showAll ??= false; L.comment ??= "";
+  return L;
+}
+const vals = id => labsState().v[id] || [];
+const series = id => labsState().cols.map((col, i) => ({ col, raw: vals(id)[i], n: parseVal(vals(id)[i]) })).filter(x => has(x.raw));
+const numSeries = id => series(id).filter(x => !isNaN(x.n));
+const billedCodes = () => allItems().map(it => it.code || "").join(" ");
+const panelHasValues = p => p.tests.some(t => vals(t.id).some(has));
+const panelVisible = p => p.always || labsState().showAll || (p.codes && p.codes.test(billedCodes())) || panelHasValues(p);
+const extraVisible = (x, store) => labsState().showAll || x.codes.test(billedCodes()) || has(store[x.id]?.res) || has(store[x.id]?.text);
+
+/* ---------- analysis: interpret entered values against the reference standard ---------- */
+function analyze() {
+  const L = labsState();
+  const F = []; // { text, code?, codeName?, lvl, supports? }
+  const T = TESTS;
+  const ser = id => numSeries(id);
+  const r = id => refFor(T[id]);
+  const min = id => Math.min(...ser(id).map(x => x.n));
+  const max = id => Math.max(...ser(id).map(x => x.n));
+  const anyLow = id => ser(id).length && r(id) && ser(id).some(x => x.n < r(id).low);
+  const anyHigh = id => ser(id).length && r(id) && ser(id).some(x => x.n > r(id).high);
+  const u = id => unitOf(T[id]);
+  const trend = id => {
+    const s = ser(id); if (s.length < 2) return "";
+    const last = s[s.length - 1], rr = r(id);
+    const ok = rr && last.n >= rr.low && last.n <= rr.high;
+    return ` Trend: ${s.map(x => `${fmtN(x.n, T[id])} (${x.col})`).join(" → ")}${ok ? " — normalised." : " — still outside reference."}`;
+  };
+  const add = (text, o = {}) => F.push({ text, lvl: "abn", ...o });
+
+  // Vital signs
+  if (anyHigh("temp") && max("temp") >= 38) add(`Fever: maximum temperature ${max("temp")} °C.${trend("temp")}`, { supports: "A0" });
+  if (anyHigh("hr")) add(`Tachycardia: heart rate up to ${max("hr")} bpm (reference ${refText(T.hr)} for age) — consistent with volume depletion.${trend("hr")}`, { supports: "E86" });
+  if (anyLow("sbp")) add(`Hypotension: systolic BP down to ${min("sbp")} mmHg (reference ${refText(T.sbp)} for age) — haemodynamic compromise from volume loss; supports IV resuscitation.`, { supports: "E86" });
+  if (anyLow("spo2")) add(`Hypoxaemia: SpO₂ down to ${min("spo2")} %.`);
+
+  // Electrolytes & acid–base
+  if (anyLow("k")) {
+    const m = min("k"), sev = m < 2.5 ? "severe" : m < 3.0 ? "moderate" : "mild";
+    add(`Hypokalaemia (${sev}): lowest potassium ${m} mmol/L (reference ${refText(T.k)}).${sev !== "mild" ? " Potassium below 3.0 mmol/L carries arrhythmia risk and justifies ECG/cardiac monitoring and supervised replacement." : ""}${trend("k")}`, { code: "E87.6", codeName: "Hypokalaemia" });
+  }
+  if (anyHigh("k")) add(`Hyperkalaemia: highest potassium ${max("k")} mmol/L.${trend("k")}`, { code: "E87.5", codeName: "Hyperkalaemia" });
+  if (anyLow("na")) add(`Hyponatraemia: lowest sodium ${min("na")} mmol/L.${trend("na")}`, { code: "E87.1", codeName: "Hypo-osmolality and hyponatraemia" });
+  if (anyHigh("na")) add(`Hypernatraemia: highest sodium ${max("na")} mmol/L — hypernatraemic dehydration.${trend("na")}`, { code: "E87.0", codeName: "Hyperosmolality and hypernatraemia" });
+  if (anyLow("hco3")) {
+    const col = L.cols.findIndex((_, i) => [vals("na")[i], vals("cl")[i], vals("hco3")[i]].every(has));
+    let ag = "";
+    if (col >= 0) {
+      const gap = parseVal(vals("na")[col]) - parseVal(vals("cl")[col]) - parseVal(vals("hco3")[col]);
+      ag = gap > 16 ? ` Anion gap ${gap} (raised) — consider ketosis/lactate.` : ` Anion gap ${gap} (normal) — consistent with gastrointestinal bicarbonate loss from diarrhoea.`;
+    }
+    add(`Metabolic acidosis: lowest bicarbonate ${min("hco3")} mmol/L.${ag}${trend("hco3")}`, { code: "E87.2", codeName: "Acidosis" });
+  }
+  if (anyLow("mg")) add(`Hypomagnesaemia: lowest magnesium ${min("mg")} mg/dL — impairs potassium correction.${trend("mg")}`, { code: "E83.4", codeName: "Disorders of magnesium metabolism" });
+  if (anyLow("phos")) add(`Hypophosphataemia: lowest phosphorus ${min("phos")} mg/dL.`, { code: "E83.3", codeName: "Disorders of phosphorus metabolism" });
+  if (anyLow("ca")) add(`Hypocalcaemia: lowest calcium ${min("ca")} mg/dL (interpret with albumin).`);
+
+  // Renal / volume status
+  const ratioCol = L.cols.findIndex((_, i) => has(vals("bun")[i]) && has(vals("cr")[i]));
+  const ratio = ratioCol >= 0 ? Math.round(parseVal(vals("bun")[ratioCol]) / parseVal(vals("cr")[ratioCol])) : null;
+  if (anyHigh("bun") || (ratio && ratio > 20)) add(`Pre-renal pattern: BUN ${ser("bun").length ? max("bun") : "—"} mg/dL${ratio ? `, BUN:creatinine ratio ${ratio} (>20)` : ""} — consistent with dehydration.${trend("bun")}`, { supports: "E86" });
+  if (anyHigh("cr")) add(`Creatinine above reference for age (max ${max("cr")} mg/dL) — compare with baseline; acute kidney injury requires a rise ≥1.5× baseline (KDIGO) before coding N17.9.${trend("cr")}`, { supports: "E86" });
+  if (anyHigh("hb") || anyHigh("hct")) add(`Haemoconcentration (${[ser("hb").length ? `Hb ${max("hb")} g/dL` : "", ser("hct").length ? `Hct ${max("hct")} %` : ""].filter(Boolean).join(", ")}) — consistent with volume depletion.`, { supports: "E86" });
+  if (has(vals("usg").find(has)) && max("usg") >= 1.025) add(`Concentrated urine (specific gravity ${fmtN(max("usg"), T.usg)}) — consistent with dehydration.`, { supports: "E86" });
+  const ket = series("uket").filter(x => x.raw !== "Negative");
+  if (ket.length) add(`Ketonuria (${ket.map(x => `${x.raw} ${x.col}`).join(", ")}) — consistent with poor oral intake/starvation ketosis.`, { supports: "E86" });
+
+  // Inflammation / infection
+  if (anyHigh("wbc")) add(`Leukocytosis: WBC up to ${max("wbc")} ×10⁹/L${anyHigh("anc") ? ` with neutrophilia (ANC ${max("anc")})` : ""} — supports a bacterial process.${trend("wbc")}`, { supports: "A0" });
+  if (anyHigh("crp")) add(`Raised CRP: up to ${max("crp")} mg/L${max("crp") > 100 ? " (markedly raised)" : ""} — systemic inflammatory response, supports bacterial aetiology.${trend("crp")}`, { supports: "A0" });
+  if (anyHigh("lact")) add(`Raised lactate: up to ${max("lact")} mmol/L — tissue hypoperfusion; supports need for IV resuscitation and close monitoring.${trend("lact")}`, { supports: "E86" });
+  if (anyLow("plt")) add(`Thrombocytopenia: platelets down to ${min("plt")} ×10⁹/L.`, { code: "D69.6", codeName: "Thrombocytopenia, unspecified" });
+  if (anyLow("wbc")) add(`Leukopenia: WBC down to ${min("wbc")} ×10⁹/L.`, { code: "D72.8", codeName: "Other specified disorders of white blood cells" });
+
+  // Other organ systems
+  if (ser("lip").length && r("lip")) {
+    const x = max("lip"), uln = r("lip").high;
+    if (x > 3 * uln) add(`Lipase ${x} U/L (>3× upper limit) — consistent with acute pancreatitis.`, { code: "K85.9", codeName: "Acute pancreatitis, unspecified" });
+    else if (x > uln) add(`Lipase mildly raised (${x} U/L, <3× upper limit) — non-diagnostic for pancreatitis.`, { lvl: "info" });
+  }
+  if (anyHigh("alt") || anyHigh("ast")) add(`Raised transaminases (ALT ${ser("alt").length ? max("alt") : "—"}, AST ${ser("ast").length ? max("ast") : "—"} U/L).`, { code: "R74.0", codeName: "Elevation of transaminase and LDH levels" });
+  if (anyHigh("glu")) add(`Hyperglycaemia: glucose up to ${max("glu")} mg/dL (stress response).`, { code: "R73.9", codeName: "Hyperglycaemia, unspecified" });
+  if (anyLow("glu")) add(`Hypoglycaemia: glucose down to ${min("glu")} mg/dL.`, { code: "E16.2", codeName: "Hypoglycaemia, unspecified" });
+  if (anyHigh("inr") || anyHigh("aptt")) add(`Prolonged coagulation times (INR ${ser("inr").length ? max("inr") : "—"}, aPTT ${ser("aptt").length ? max("aptt") : "—"} s).`);
+  if (anyHigh("trop")) add(`Raised troponin I: up to ${max("trop")} ng/mL — biochemical myocardial injury; supports cardiac monitoring and echocardiography.`, { supports: "cardiac" });
+  else if (ser("trop").length) add(`Troponin I within reference on all samples (max ${max("trop")} ng/mL) — no biochemical evidence of myocardial injury.`, { lvl: "info" });
+  if (anyHigh("bnp")) add(`Raised BNP: up to ${max("bnp")} pg/mL — myocardial strain.`, { supports: "cardiac" });
+  const uti = ["ule", "unit"].some(id => series(id).some(x => !TESTS[id].normal.includes(x.raw)));
+  if (uti) add("Urinalysis positive for leukocyte esterase/nitrite — evaluate for urinary tract infection.", { lvl: "info" });
+
+  // Microbiology
+  MICRO.forEach(m => {
+    const x = L.micro[m.id] || {};
+    if (x.res === "Positive") {
+      const org = ORGANISMS.find(([re]) => re.test(x.text || ""));
+      if (m.id === "bcx") add(`Positive blood culture${x.text ? `: ${x.text}` : ""} — bacteraemia; review for sepsis criteria.`, { code: "A41.9", codeName: "Sepsis, unspecified organism" });
+      else add(`Positive ${m.name}${x.text ? `: ${x.text}` : ""} — confirms infectious aetiology.`, org ? { code: org[1], codeName: org[2], specific: true, supports: "A0" } : { supports: "A0" });
+    } else if (x.res === "Negative / no growth") F.push({ text: `${m.name}: negative / no growth.`, lvl: "info" });
+    else if (x.res === "Pending") F.push({ text: `${m.name}: result pending at time of report.`, lvl: "info" });
+  });
+  // Imaging & cardiac studies
+  STUDIES.forEach(s => {
+    const x = L.studies[s.id] || {};
+    if (x.res === "Abnormal") add(`${s.name}: ${x.text || "abnormal"}.`, s.id === "ecg" || s.id === "echo" ? { supports: "cardiac" } : {});
+    else if (x.res === "Normal") F.push({ text: `${s.name}: no significant abnormality${x.text ? ` (${x.text})` : ""}.`, lvl: "info" });
+  });
+  return F;
+}
+
+/* ---------- consistency between results, coding and treatment (feeds pre-submission checks) ---------- */
+function labChecks(add) {
+  const F = analyze();
+  const coded = c => state.diagnoses.some(d => (d.code || "").toUpperCase().startsWith(c.toUpperCase()));
+  // critical values
+  LAB_PANELS.forEach(p => p.tests.forEach(t => series(t.id).forEach(x => {
+    const f = flagOf(t, x.raw);
+    if (f === "LL" || f === "HH") add("warn", `Critical value: ${t.name} ${x.raw} ${unitOf(t)} (${x.col}). Document notification and the action taken.`);
+  })));
+  // results that support a code that is not on the claim
+  F.filter(f => f.code && !coded(f.code)).forEach(f => add("info", `Results support ${f.code} ${f.codeName}${f.specific ? " — more specific than the current primary code; consider updating the diagnosis" : " — consider adding it to the diagnoses"}.`));
+  // coded diagnoses that the entered results do not support
+  const contra = [["E87.6", "k", "low", "potassium below reference"], ["E87.5", "k", "high", "potassium above reference"], ["E87.1", "na", "low", "sodium below reference"], ["E87.0", "na", "high", "sodium above reference"], ["E87.2", "hco3", "low", "low bicarbonate"]];
+  contra.forEach(([code, id, dir, what]) => {
+    const s = numSeries(id), rr = refFor(TESTS[id]);
+    if (coded(code) && s.length && rr && !s.some(x => (dir === "low" ? x.n < rr.low : x.n > rr.high))) add("warn", `${code} is coded but none of the entered ${TESTS[id].name.toLowerCase()} values shows ${what}. Insurers check coded diagnoses against results.`);
+  });
+  // weight-based dosing (paediatric)
+  const age = ageAt(state.patient.dob, state.encounter.admit);
+  const wt = numSeries("wt")[0]?.n;
+  if (wt && age !== null && age < 18) {
+    findItems(/paracetamol|acetaminophen/i).forEach(it => {
+      const mg = /(\d{2,4})\s*mg/i.exec(it.desc); if (!mg) return;
+      const perKg = +mg[1] / wt;
+      add(perKg > 15.5 ? "warn" : "ok", `Paracetamol ${mg[1]} mg per dose = ${perKg.toFixed(1)} mg/kg at ${wt} kg (usual paediatric dose 10–15 mg/kg, max 75 mg/kg/day).`);
+    });
+  }
+  return F;
+}
+const cardiacSupport = () => {
+  const F = analyze();
+  const ev = F.filter(f => f.supports === "cardiac").map(f => f.text.split(" — ")[0].replace(/\.$/, ""));
+  const k = numSeries("k");
+  if (k.length && Math.min(...k.map(x => x.n)) < 3.0) ev.unshift(`potassium ${Math.min(...k.map(x => x.n))} mmol/L`);
+  return ev;
+};
+
+/* ---------- investigations editor ---------- */
+function renderLabs() {
+  const L = labsState();
+  const host = $("#labsHost");
+  const age = ageAt(state.patient.dob, state.encounter.admit);
+  const colHead = L.cols.map((c, i) => `<th class="labcol"><input data-col="${i}" value="${esc(c)}" title="Column label (day or date)" /></th>`).join("");
+  let html = `
+    <div class="lab-toolbar">
+      <span class="hint" style="margin:0">Standard ranges for: <b>${age !== null ? `age ${age}` : "adult (no DOB)"}${state.patient.sex ? ", " + esc(state.patient.sex.toLowerCase()) : ""}</b></span>
+      <span class="spacer"></span>
+      <button class="small" id="colAdd">+ Column</button>
+      <button class="small" id="colDel" ${L.cols.length <= 1 ? "disabled" : ""}>− Column</button>
+      <label style="display:inline-flex;gap:4px;align-items:center;font-weight:400"><input type="checkbox" id="labShowAll" style="width:auto;margin:0" ${L.showAll ? "checked" : ""} /> Show all tests</label>
+      <button class="small" id="btnRefs">Reference ranges…</button>
+    </div>`;
+  LAB_PANELS.filter(panelVisible).forEach(p => {
+    html += `<div class="lab-panel"><div class="lab-title">${esc(p.title)}</div><div class="scroll"><table class="edit lab">
+      <thead><tr><th>Test</th><th>Reference</th><th>Unit</th>${colHead}</tr></thead><tbody>`;
+    p.tests.forEach(t => {
+      html += `<tr><td class="tname">${esc(t.name)}</td><td class="ref">${esc(refText(t))}${refFor(t)?.custom ? ' <span title="Hospital-defined range">*</span>' : ""}</td><td class="ref">${esc(unitOf(t))}</td>`;
+      L.cols.forEach((_, i) => {
+        const v = vals(t.id)[i] ?? "", f = flagOf(t, v);
+        html += t.qual
+          ? `<td><select data-t="${t.id}" data-i="${i}" class="fl-${f}">${["", ...t.qual].map(o => `<option ${o === v ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></td>`
+          : `<td><div class="cell"><input data-t="${t.id}" data-i="${i}" inputmode="decimal" value="${esc(v)}" class="fl-${f}" /><span class="flag">${f && f !== "N" ? f : ""}</span></div></td>`;
+      });
+      html += `</tr>`;
+    });
+    html += `</tbody></table></div></div>`;
+  });
+  const micro = MICRO.filter(m => extraVisible(m, L.micro));
+  if (micro.length) {
+    html += `<div class="lab-panel"><div class="lab-title">Microbiology</div><table class="edit lab"><thead><tr><th>Test</th><th style="width:190px">Result</th><th>Organism / details</th></tr></thead><tbody>` +
+      micro.map(m => `<tr><td class="tname">${esc(m.name)}</td><td><select data-m="${m.id}" data-f="res" class="fl-${(L.micro[m.id] || {}).res === "Positive" ? "A" : ""}">${MICRO_RESULTS.map(o => `<option ${o === (L.micro[m.id] || {}).res ? "selected" : ""}>${o}</option>`).join("")}</select></td>
+        <td><input data-m="${m.id}" data-f="text" value="${esc((L.micro[m.id] || {}).text)}" placeholder="e.g. Salmonella enterica, ciprofloxacin-sensitive" /></td></tr>`).join("") + `</tbody></table></div>`;
+  }
+  const studies = STUDIES.filter(s => extraVisible(s, L.studies));
+  if (studies.length) {
+    html += `<div class="lab-panel"><div class="lab-title">Imaging &amp; cardiac studies</div><table class="edit lab"><thead><tr><th>Study</th><th style="width:150px">Result</th><th>Findings / impression</th></tr></thead><tbody>` +
+      studies.map(s => `<tr><td class="tname">${esc(s.name)}</td><td><select data-s2="${s.id}" data-f="res" class="fl-${(L.studies[s.id] || {}).res === "Abnormal" ? "A" : ""}">${["", "Normal", "Abnormal"].map(o => `<option ${o === (L.studies[s.id] || {}).res ? "selected" : ""}>${o}</option>`).join("")}</select></td>
+        <td><input data-s2="${s.id}" data-f="text" value="${esc((L.studies[s.id] || {}).text)}" placeholder="${s.id === "ecg" ? "e.g. sinus tachycardia, flattened T waves, U waves" : "findings"}" /></td></tr>`).join("") + `</tbody></table></div>`;
+  }
+  html += `<label style="margin-top:10px">Physician interpretation / comment (optional, printed under the analysis)<textarea id="labComment">${esc(L.comment)}</textarea></label>
+    <div class="analysis"><div class="lab-title">Automatic analysis</div><ul id="analysisList"></ul></div>`;
+  host.innerHTML = html;
+
+  host.querySelectorAll("[data-col]").forEach(el => el.oninput = () => { L.cols[+el.dataset.col] = el.value; changed(false); });
+  host.querySelectorAll("[data-t]").forEach(el => {
+    const t = TESTS[el.dataset.t], i = +el.dataset.i;
+    const upd = () => {
+      (L.v[t.id] ??= [])[i] = el.value.trim();
+      const f = flagOf(t, el.value.trim());
+      el.className = "fl-" + f;
+      const fl = el.parentElement.querySelector(".flag"); if (fl) fl.textContent = f && f !== "N" ? f : "";
+      changed(false);
+    };
+    el.oninput = upd; el.onchange = upd;
+  });
+  host.querySelectorAll("[data-m]").forEach(el => el.oninput = el.onchange = () => { (L.micro[el.dataset.m] ??= {})[el.dataset.f] = el.value; if (el.tagName === "SELECT") el.className = "fl-" + (el.value === "Positive" ? "A" : ""); changed(false); });
+  host.querySelectorAll("[data-s2]").forEach(el => el.oninput = el.onchange = () => { (L.studies[el.dataset.s2] ??= {})[el.dataset.f] = el.value; if (el.tagName === "SELECT") el.className = "fl-" + (el.value === "Abnormal" ? "A" : ""); changed(false); });
+  $("#labComment").oninput = e => { L.comment = e.target.value; save(); };
+  $("#colAdd").onclick = () => { if (L.cols.length < 7) { L.cols.push(`Day ${L.cols.length + 1}`); renderLabs(); changed(); } };
+  $("#colDel").onclick = () => {
+    const last = L.cols.length - 1;
+    if (Object.values(L.v).some(a => has(a[last])) && !confirm(`Remove column “${L.cols[last]}” and its values?`)) return;
+    L.cols.pop(); Object.values(L.v).forEach(a => { a.length = Math.min(a.length, L.cols.length); }); renderLabs(); changed();
+  };
+  $("#labShowAll").onchange = e => { L.showAll = e.target.checked; renderLabs(); changed(false); };
+  $("#btnRefs").onclick = openRefs;
+  renderAnalysis();
+}
+function renderAnalysis() {
+  const ul = $("#analysisList"); if (!ul) return;
+  const F = analyze();
+  ul.innerHTML = F.length ? F.map(f => `<li class="${f.lvl}">${esc(f.text)}${f.code ? ` <b>[${esc(f.code)}]</b>` : ""}</li>`).join("") : `<li class="info">Enter values above — abnormal results and their interpretation appear here automatically.</li>`;
+}
+
+/* ---------- reference ranges editor ---------- */
+function openRefs() {
+  const rows = [];
+  LAB_PANELS.forEach(p => p.tests.filter(t => t.r && t.r.length).forEach(t => t.r.forEach((b, i) => {
+    const o = refOverrides[`${t.id}|${i}`] || {};
+    const band = `${b.min === 0 && b.max === 200 ? "All ages" : b.max === 200 ? `≥ ${b.min} y` : `${b.min}–<${b.max} y`}${b.sex ? " " + b.sex : ""}`;
+    rows.push(`<tr${i === bandIndex(t) ? ' class="cur"' : ""}><td>${esc(p.title)}</td><td>${esc(t.name)}</td><td>${band}</td>
+      <td><input data-rk="${t.id}|${i}" data-rf="low" value="${esc(o.low ?? "")}" placeholder="${b.low}" /></td>
+      <td><input data-rk="${t.id}|${i}" data-rf="high" value="${esc(o.high ?? "")}" placeholder="${b.high}" /></td>
+      <td><input data-rk="${t.id}|${i}" data-rf="unit" value="${esc(o.unit ?? "")}" placeholder="${esc(t.unit)}" /></td></tr>`);
+  })));
+  $("#refsBody").innerHTML = rows.join("");
+  $("#refsDlg").showModal();
+}
+function saveRefsFromDialog() {
+  const next = {};
+  document.querySelectorAll("#refsBody [data-rk]").forEach(el => { if (has(el.value)) (next[el.dataset.rk] ??= {})[el.dataset.rf] = el.value.trim(); });
+  refOverrides = next; saveRefs(); $("#refsDlg").close(); renderLabs(); changed();
+}
+
+/* ---------- investigations in the printed report ---------- */
+function reportInvestigations() {
+  const L = labsState();
+  const used = L.cols.map((_, i) => LAB_PANELS.some(p => p.tests.some(t => has(vals(t.id)[i]))));
+  const cols = L.cols.map((c, i) => ({ c, i })).filter(x => used[x.i]);
+  let out = "";
+  const panels = LAB_PANELS.filter(panelHasValues);
+  if (panels.length) {
+    out += `<table class="r"><thead><tr><th>Test</th>${cols.map(x => `<th class="n">${esc(x.c)}</th>`).join("")}<th>Unit</th><th>Reference</th></tr></thead><tbody>` +
+      panels.map(p => `<tr class="cat"><td colspan="${cols.length + 3}">${esc(p.title)}</td></tr>` +
+        p.tests.filter(t => vals(t.id).some(has)).map(t => `<tr><td>${esc(t.name)}</td>${cols.map(x => {
+          const v = vals(t.id)[x.i], f = flagOf(t, v);
+          return `<td class="n ${f && f !== "N" ? "rf-" + f : ""}">${has(v) ? esc(v) + (f && f !== "N" ? ` <b>${f}</b>` : "") : ""}</td>`;
+        }).join("")}<td>${esc(unitOf(t))}</td><td>${esc(refText(t))}</td></tr>`).join("")).join("") +
+      `</tbody></table><div class="r-legend">Flags: L low · H high · LL/HH critical · A abnormal. Reference intervals for ${(() => { const a = ageAt(state.patient.dob, state.encounter.admit); return a !== null ? `age ${a}` : "adults"; })()}${state.patient.sex ? `, ${esc(state.patient.sex.toLowerCase())}` : ""}.</div>`;
+  }
+  const micro = MICRO.filter(m => has((L.micro[m.id] || {}).res) || has((L.micro[m.id] || {}).text));
+  if (micro.length) out += `<table class="r" style="margin-top:6px"><thead><tr><th>Microbiology</th><th>Result</th><th>Organism / details</th></tr></thead><tbody>` +
+    micro.map(m => `<tr><td>${esc(m.name)}</td><td class="${L.micro[m.id].res === "Positive" ? "rf-A" : ""}">${esc(L.micro[m.id].res || "")}</td><td>${esc(L.micro[m.id].text || "")}</td></tr>`).join("") + `</tbody></table>`;
+  const st = STUDIES.filter(s => has((L.studies[s.id] || {}).res) || has((L.studies[s.id] || {}).text));
+  if (st.length) out += `<table class="r" style="margin-top:6px"><thead><tr><th>Imaging / cardiac study</th><th>Result</th><th>Findings / impression</th></tr></thead><tbody>` +
+    st.map(s => `<tr><td>${esc(s.name)}</td><td class="${L.studies[s.id].res === "Abnormal" ? "rf-A" : ""}">${esc(L.studies[s.id].res || "")}</td><td>${esc(L.studies[s.id].text || "")}</td></tr>`).join("") + `</tbody></table>`;
+  return out;
+}
+function reportAnalysis() {
+  const F = analyze(), L = labsState();
+  if (!F.length && !has(L.comment)) return "";
+  return `<ol class="r-analysis">${F.map(f => `<li>${esc(f.text)}${f.code ? ` <b>[${esc(f.code)} ${esc(f.codeName)}]</b>` : ""}</li>`).join("")}</ol>` +
+    (has(L.comment) ? `<div class="r-text"><b>Physician interpretation</b>${esc(L.comment)}</div>` : "");
+}
+
 /* ---------- pre-submission checks ---------- */
 function runChecks() {
   const out = [];
@@ -488,13 +976,16 @@ function runChecks() {
   const age = ageAt(state.patient.dob, state.encounter.admit);
   if (age !== null && age < 18) {
     add("info", `Paediatric patient (age ${age} at admission). Make sure the guardian's name and weight-based dosing are documented.`);
-    findItems(/floxacin|J0744|J2280|J1956/i).forEach(it => add("warn", `Fluoroquinolone (${it.desc.split(/[—-]/)[0].trim()}) given to a patient under 18 — insurers routinely query this; document why a non-fluoroquinolone alternative was not appropriate.`));
+    const posCx = MICRO.filter(m => (labsState().micro[m.id] || {}).res === "Positive").map(m => `${m.name}${labsState().micro[m.id].text ? ": " + labsState().micro[m.id].text : ""}`);
+    findItems(/floxacin|J0744|J2280|J1956/i).forEach(it => add(posCx.length ? "info" : "warn", `Fluoroquinolone (${it.desc.split(/[—-]/)[0].trim()}) given to a patient under 18 — ${posCx.length ? `supported by positive microbiology (${posCx.join("; ")}); state why a non-fluoroquinolone alternative was not suitable.` : "insurers routinely query this; document why a non-fluoroquinolone alternative was not appropriate."}`));
     findItems(/doxycycline|tetracycline/i).forEach(() => { if (age < 8) add("warn", "Tetracycline-class drug in a child under 8 — document justification."); });
-    findItems(/paracetamol|acetaminophen/i).forEach(it => { const mg = /(\d{3,4})\s*mg/i.exec(it.desc); if (mg && +mg[1] > 500) add("info", `${it.desc.split(/[—-]/)[0].trim()} per dose in a ${age}-year-old — record body weight to support the dose.`); });
+    if (!numSeries("wt").length) findItems(/paracetamol|acetaminophen/i).forEach(it => { const mg = /(\d{3,4})\s*mg/i.exec(it.desc); if (mg && +mg[1] > 500) add("info", `${it.desc.split(/[—-]/)[0].trim()} per dose in a ${age}-year-old — record body weight to support the dose.`); });
   }
 
   const cardiac = findItems(/\b(93306|84484|83880)\b|telemetry|echocardi|troponin|natriuretic/i);
-  if (cardiac.length && !hasDx(/^I|^R00|^R07|^R55|^R94\.3/)) {
+  const cEv = cardiacSupport();
+  if (cardiac.length && cEv.length) add("info", `Cardiac monitoring/work-up supported by results: ${cEv.join("; ")}. Make sure this is stated in the medical-necessity text.`);
+  else if (cardiac.length && !hasDx(/^I|^R00|^R07|^R55|^R94\.3/)) {
     const lyte = hasDx(/^E87/);
     add("warn", `Cardiac work-up billed (${[...new Set(cardiac.map(c => c.code || c.desc.slice(0, 20)))].join(", ")}) without a cardiac diagnosis. ${lyte ? "Electrolyte disturbance (E87.x) is coded — state the ECG/rhythm findings that justified telemetry, echo and cardiac markers, or add the relevant code (e.g. R94.31 abnormal ECG, I49.9 arrhythmia)." : "Add a supporting diagnosis or a written justification."}`);
   }
@@ -509,6 +1000,7 @@ function runChecks() {
   if (noCode) add("info", `${noCode} line(s) have no CPT/HCPCS code (common for oral medicines) — some insurers require a drug code or NDC/barcode.`);
   state.sections.forEach(s => { if (s.items.length && !String(s.justification || "").trim()) add("info", `Category “${s.title}” has no justification text.`); });
 
+  labChecks(add);
   const t = totals();
   const printed = num(state.invoice.printedTotal);
   if (printed) {
@@ -541,17 +1033,9 @@ function autoDraft() {
 
   if (!c.complaint && prim) c.complaint = `${symptoms.length ? symptoms.join("; ") : prim.desc}.`.replace(/^./, m => m.toUpperCase());
   if (!c.history && prim) c.history = `${who.replace(/^./, m => m.toUpperCase())} presented to the ${state.encounter.source || state.provider.department || "emergency department"} on ${fmtDate(state.encounter.admit)} with ${symptoms.length ? symptoms.join(", ") : prim.desc.toLowerCase()} of [ ] duration, after [suspected food exposure / onset details]. Number of vomiting/diarrhoea episodes: [ ]. Relevant history: [ ].`;
+  const adm = id => { const x = series(id)[0]; if (!x) return ""; const f = flagOf(TESTS[id], x.raw); return `${x.raw}${f && f !== "N" ? ` (${f})` : ""}`; };
+  if (!c.exam && ["temp", "hr", "rr", "sbp", "spo2", "wt"].some(id => series(id).length)) c.exam = `Vital signs on admission: Temp ${adm("temp") || "[ ]"} °C, HR ${adm("hr") || "[ ]"} bpm, RR ${adm("rr") || "[ ]"}/min, BP ${adm("sbp") || "[ ]"}/${adm("dbp") || "[ ]"} mmHg, SpO₂ ${adm("spo2") || "[ ]"} %, weight ${adm("wt") || "[ ]"} kg.\nHydration: [degree of dehydration, mucous membranes, capillary refill].\nAbdomen: [tenderness, guarding, bowel sounds].`;
   if (!c.exam) c.exam = "Temp [ ] °C, HR [ ] bpm, BP [ ] mmHg, RR [ ], SpO₂ [ ] %, weight [ ] kg.\nHydration: [degree of dehydration, mucous membranes, capillary refill].\nAbdomen: [tenderness, guarding, bowel sounds].";
-  if (!c.results) {
-    const groups = [];
-    const pick = (re, label) => { if (findItems(re).length) groups.push(`${label}: [ ]`); };
-    pick(/\b85025\b|CBC/i, "CBC (WBC/Hb/Plt)"); pick(/\b80053\b|metabolic panel/i, "Electrolytes/renal (Na/K/Cr/urea)");
-    pick(/\b86140\b|CRP/i, "CRP"); pick(/\b83605\b|lact/i, "Lactate"); pick(/\b87507\b|pathogen panel/i, "GI PCR panel");
-    pick(/\b87045\b|stool culture/i, "Stool culture"); pick(/\b87040\b|blood culture/i, "Blood cultures");
-    pick(/\b84484\b|troponin/i, "Troponin"); pick(/\b9300\d\b|electrocardiogram/i, "ECG"); pick(/\b93306\b|echocardi/i, "Echocardiogram");
-    pick(/\b7417\d\b|CT /i, "CT abdomen/pelvis"); pick(/\b7104\d\b|chest radiograph/i, "Chest X-ray");
-    c.results = groups.join("\n");
-  }
   if (!c.course) {
     const meds = findItems(/\b[JS]\d{4}\b|mg|mEq|mL/i).filter(it => /^02[5-6]/.test(it.rev || "") || /^[JS]\d{4}$/.test(it.code || "") || /mg|mEq/i.test(it.desc))
       .map(it => `${it.desc.split(/\s[—–-]\s/)[0].trim()} (${it.dates || "dates [ ]"})`);
@@ -564,7 +1048,8 @@ function autoDraft() {
   if (!c.necessity) {
     const lines = [];
     RATIONALE.forEach(r => { if (findItems(r.items).length) { const d = dxRef(r.dx); if (d || r.dx.source === ".") lines.push("• " + r.text(d || (prim ? `${prim.desc} (${prim.code})` : "the presenting condition"))); } });
-    c.necessity = `Hospitalisation was medically necessary because [the patient could not maintain oral hydration / required IV therapy and monitoring].\n` + lines.join("\n");
+    const sup = analyze().filter(f => f.lvl !== "info").map(f => "• " + f.text.split(" Trend:")[0]);
+    c.necessity = `Hospitalisation was medically necessary because [the patient could not maintain oral hydration / required IV therapy and monitoring].\n` + lines.join("\n") + (sup.length ? `\nSupporting objective findings:\n${sup.join("\n")}` : "");
   }
   if (!c.discharge) c.discharge = "Stable, afebrile, tolerating oral intake, electrolytes [normalised]. [ ]";
   if (!c.followUp) c.followUp = "Outpatient review in [ ] days; repeat electrolytes [ ]; return if symptoms recur.";
@@ -667,12 +1152,15 @@ function buildReport() {
       ${text("Chief complaint / reason for admission", s.clinical.complaint)}
       ${text("History of present illness", s.clinical.history)}
       ${text("Examination on admission", s.clinical.exam)}
-      ${text("Key investigation results", s.clinical.results)}
+      ${text("Other investigation notes", s.clinical.results)}
       ${text("Hospital course & treatment", s.clinical.course)}
       ${text("Condition at discharge", s.clinical.discharge)}
       ${text("Discharge medications", s.clinical.dischargeMeds)}
       ${text("Follow-up", s.clinical.followUp)}
     </div>
+
+    ${(() => { const inv = reportInvestigations(); return inv ? `<div class="r-sec"><h3>Investigations — results vs. reference standards</h3>${inv}</div>` : ""; })()}
+    ${(() => { const an = reportAnalysis(); return an ? `<div class="r-sec"><h3>Analysis &amp; interpretation</h3>${an}</div>` : ""; })()}
 
     ${s.clinical.necessity ? `<div class="r-sec"><h3>Medical necessity</h3>${text("", s.clinical.necessity)}</div>` : ""}
 
@@ -685,6 +1173,7 @@ function buildReport() {
       </tbody></table>
     </div>
 
+    ${has(s.report.references) ? `<div class="r-sec"><h3>References</h3><ol class="r-refs">${s.report.references.split(/\n+/).filter(x => x.trim()).map(x => `<li>${esc(x.trim())}</li>`).join("")}</ol></div>` : ""}
     ${s.report.remarks ? `<div class="r-sec"><h3>Remarks</h3><div class="r-text">${esc(s.report.remarks)}</div></div>` : ""}
 
     <div class="r-sec">
@@ -759,11 +1248,12 @@ function importInvoice(txt, replace) {
 }
 
 /* ---------- UI wiring ---------- */
-function renderAll() { bindFields(); renderDx(); renderSections(); changed(); }
+function renderAll() { bindFields(); renderDx(); renderSections(); renderLabs(); changed(); }
 let tmr;
 function changed(full = true) {
   save();
   renderTotals();
+  renderAnalysis();
   clearTimeout(tmr);
   tmr = setTimeout(renderChecks, full ? 0 : 250);
   if (full) renderChecks();
@@ -802,8 +1292,11 @@ $("#importGo").onclick = () => {
 $("#addDx").onclick = () => { state.diagnoses.push({ rank: state.diagnoses.length ? "Secondary" : "Primary", code: "", desc: "", onset: "On admission" }); renderDx(); changed(); };
 $("#addSection").onclick = () => { state.sections.push({ title: "", justification: "", items: [{ rev: "", code: "", dates: "", desc: "", qty: 1, unit: "" }] }); renderSections(); changed(); };
 $("#btnDraft").onclick = autoDraft;
+$("#refsSave").onclick = saveRefsFromDialog;
+$("#refsReset").onclick = () => { if (confirm("Discard all hospital-defined ranges and use the built-in standards?")) { document.querySelectorAll("#refsBody [data-rk]").forEach(el => (el.value = "")); saveRefsFromDialog(); } };
 window.addEventListener("beforeprint", buildReport);
 
+state = load() || blankCase();
 renderAll();
 </script>
 </body>
