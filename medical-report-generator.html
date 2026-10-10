@@ -137,6 +137,19 @@
   .sigbox img { display: block; max-height: 60px; max-width: 100%; margin: 4px 0; background: #fff; }
   #sigPad { width: 100%; height: 180px; border: 1px dashed var(--accent); border-radius: 8px; background: #fff; touch-action: none; cursor: crosshair; }
   .ref-tag { color: var(--muted); font-size: 11px; }
+  output.calc { display: block; min-width: 70px; text-align: right; padding: 4px 6px; border: 1px dashed var(--line); border-radius: 6px; background: #f4f6f8; font-style: italic; min-height: 29px; }
+  .gi-head { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin: 4px 0; }
+  .gi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 10px; }
+  .gi-t { display: flex; align-items: center; gap: 6px; font-weight: 400; color: var(--ink); font-size: 12px; padding: 2px 4px; border-radius: 6px; }
+  .gi-t span { flex: 1; }
+  .gi-t select { width: 130px; margin: 0; padding: 2px 4px; }
+  .study { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 12px; background: #fbfcfd; }
+  .study-head { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; color: var(--accent); }
+  .study-head .spacer { flex: 1; }
+  .r-study { margin: 6px 0 10px; break-inside: avoid; }
+  .r-study-h { border-bottom: 1px solid #bbb; padding-bottom: 2px; margin-bottom: 3px; }
+  .r-impr { background: #f6f8fa; padding: 3px 6px; border-left: 3px solid var(--accent); }
+  .r-calc { color: #777; font-size: 9px; }
 
   @media (max-width: 640px) {
     .r-kv { grid-template-columns: 1fr; }
@@ -221,9 +234,7 @@
     <div class="card">
       <h2>Encounter</h2>
       <div class="grid">
-        <div><label>Invoice no.<input data-k="invoice.no" /></label></div>
-        <div><label>Invoice date<input type="date" data-k="invoice.date" /></label></div>
-        <div><label>Currency<input data-k="invoice.currency" /></label></div>
+        <div><label>Hospital reference / invoice no.<input data-k="invoice.no" /></label></div>
         <div><label>Admission date<input type="date" data-k="encounter.admit" /></label></div>
         <div><label>Discharge date<input type="date" data-k="encounter.discharge" /></label></div>
         <div><label>Patient type<input data-k="encounter.type" list="ptypes" /></label></div>
@@ -232,7 +243,6 @@
         <div><label>Attending physician<input data-k="encounter.attending" /></label></div>
         <div><label>Specialty<input data-k="encounter.specialty" /></label></div>
         <div><label>Physician licence / syndicate no.<input data-k="encounter.license" /></label></div>
-        <div><label>Invoice total as printed (for reconciliation)<input type="number" step="0.01" data-k="invoice.printedTotal" /></label></div>
       </div>
       <datalist id="ptypes"><option>Inpatient (Med/Surg)</option><option>Inpatient (ICU)</option><option>Day case</option><option>Outpatient</option><option>Emergency only</option></datalist>
       <datalist id="sources"><option>Emergency department</option><option>Physician referral</option><option>Transfer from another facility</option><option>Elective</option></datalist>
@@ -249,12 +259,19 @@
 
     <div class="card">
       <h2><span class="grow">Investigations &amp; analysis</span></h2>
-      <p class="hint">Type the <b>values only</b>. Standard reference ranges for the patient's age and sex are built in; results outside the range are flagged (L / H, LL / HH critical) and interpreted automatically. Panels appear for the tests billed on the invoice — tick “Show all tests” for others.</p>
+      <p class="hint">Type the <b>values only</b>. Standard reference ranges for the patient's age and sex are built in; results outside the range are flagged (L / H, LL / HH critical) and interpreted automatically. Calculated values (anion gap, osmolality, corrected calcium, eGFR, QTc…) fill in by themselves. Panels appear for the tests listed in the services — tick “Show all tests” for others.</p>
       <div id="labsHost"></div>
     </div>
 
     <div class="card">
-      <h2><span class="grow">Clinical summary</span><button class="small" id="btnDraft" title="Fill empty fields with a draft built from diagnoses and charges">✎ Auto-draft empty fields</button></h2>
+      <h2><span class="grow">Radiology, imaging &amp; cardiac diagnostics</span></h2>
+      <p class="hint">Every imaging and cardiac study listed in the services gets a structured report. Set each structure to <b>Normal</b> (the standard normal description is printed automatically) or <b>Abnormal</b> and type only the abnormal finding. ECG and echo measurements are entered with their reference ranges.</p>
+      <div id="imgPanelsHost"></div>
+      <div id="imgStudiesHost"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="grow">Clinical summary</span><button class="small" id="btnDraft" title="Fill empty fields with a draft built from diagnoses, services and results">✎ Auto-draft empty fields</button></h2>
       <p class="hint">Auto-draft only writes into empty boxes and marks clinical facts it cannot know with “[ ]”. The treating physician must review every field before signing.</p>
       <div class="grid">
         <div class="wide"><label>Chief complaint / reason for admission<textarea data-k="clinical.complaint"></textarea></label></div>
@@ -270,21 +287,9 @@
     </div>
 
     <div class="card">
-      <h2><span class="grow">Itemized charges</span><button class="small" id="addSection">+ Add category</button></h2>
-      <p class="hint">Amount = Qty × Unit price (calculated). Add a short justification per category — it appears in the report next to the charges.</p>
+      <h2><span class="grow">Services &amp; procedures performed</span><button class="small" id="addSection">+ Add group</button></h2>
+      <p class="hint">The services provided during the stay (imported from the hospital bill — no prices are kept). They decide which investigation panels and imaging reports appear above. Add the clinical indication per group; it is printed in the report.</p>
       <div id="sections"></div>
-    </div>
-
-    <div class="card">
-      <h2>Settlement</h2>
-      <div class="grid">
-        <div><label>Discount / contractual adjustment<input type="number" step="0.01" data-k="settlement.discount" /></label></div>
-        <div><label>Non-covered items<input type="number" step="0.01" data-k="settlement.nonCovered" /></label></div>
-        <div><label>Deductible<input type="number" step="0.01" data-k="settlement.deductible" /></label></div>
-        <div><label>Co-insurance (%)<input type="number" step="0.1" data-k="settlement.copayPct" /></label></div>
-        <div><label>Already paid by patient<input type="number" step="0.01" data-k="settlement.paidByPatient" /></label></div>
-      </div>
-      <div class="totals" id="totalsBox" style="margin-top:12px"></div>
     </div>
 
     <div class="card">
@@ -292,7 +297,7 @@
       <div class="grid">
         <div><label>Report date<input type="date" data-k="report.date" /></label></div>
         <div><label>Prepared by<input data-k="report.preparedBy" /></label></div>
-        <div><label>Itemization in report<select data-k="report.detail"><option value="full">Full line items</option><option value="summary">Category totals only</option></select></label></div>
+        <div><label>Services list in report<select data-k="report.detail"><option value="full">Show all services</option><option value="summary">Groups only</option><option value="none">Do not print</option></select></label></div>
         <div><label>Report language note / remarks<input data-k="report.remarks" /></label></div>
         <div><label>Confidential watermark<select data-k="report.watermark"><option value="yes">Show “CONFIDENTIAL” watermark</option><option value="no">No watermark</option></select></label></div>
         <div><label>National ID in report<select data-k="report.maskId"><option value="yes">Mask (last 4 digits only)</option><option value="">Show in full</option></select></label></div>
@@ -314,7 +319,7 @@
 
 <dialog id="importDlg">
   <h3 style="margin-top:0">Import invoice text</h3>
-  <p class="hint">Open the itemized invoice PDF, select all text (Ctrl+A), copy, and paste it below. Lines that end with <b>Qty · Unit price · Amount</b> become line items; ALL-CAPS headings become categories. ICD-10 diagnosis lines are picked up too. Review the result afterwards.</p>
+  <p class="hint">Open the itemized invoice PDF, select all text (Ctrl+A), copy, and paste it below. Service lines (code, dates, description, quantity) are imported <b>without prices</b>; ALL-CAPS headings become groups. ICD-10 diagnosis lines are picked up too. Review the result afterwards.</p>
   <textarea id="importText" placeholder="Paste invoice text here…"></textarea>
   <p>
     <label style="display:inline"><input type="checkbox" id="importReplace" checked style="width:auto" /> Replace existing charges &amp; diagnoses</label>
@@ -378,13 +383,13 @@ function blankCase() {
     provider: { name: "", department: "", address: "", phone: "", fax: "", license: "" },
     patient: { name: "", dob: "", sex: "", mrn: "", nationalId: "", phone: "", guardian: "", address: "" },
     insurance: { company: "", tpa: "", policyNo: "", memberId: "", holder: "", preauthNo: "", claimNo: "", coverage: "" },
-    invoice: { no: "", date: "", currency: "EGP", printedTotal: "" },
+    invoice: { no: "", date: "" },
     encounter: { admit: "", discharge: "", type: "", source: "", disposition: "", attending: "", specialty: "", license: "" },
     diagnoses: [{ rank: "Primary", code: "", desc: "", onset: "On admission" }],
     clinical: { complaint: "", history: "", exam: "", results: "", course: "", necessity: "", discharge: "", dischargeMeds: "", followUp: "" },
     sections: [],
-    settlement: { discount: "", nonCovered: "", deductible: "", copayPct: "", paidByPatient: "" },
-    labs: { cols: ["Admission", "Day 3", "Discharge"], v: {}, micro: {}, studies: {}, showAll: false, comment: "" },
+    labs: { cols: ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5"], v: {}, micro: {}, studies: {}, showAll: false, comment: "" },
+    imaging: {},
     report: { date: new Date().toISOString().slice(0, 10), preparedBy: "", detail: "full", remarks: "", references: "", watermark: "yes", maskId: "yes" },
     signatures: { physician: null, director: null, stamp: null }
   };
@@ -396,7 +401,6 @@ let state; // initialised at start-up, after all modules are defined
 const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const num = v => { const n = parseFloat(String(v ?? "").replace(/,/g, "")); return isFinite(n) ? n : 0; };
-const money = v => num(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const getPath = (o, p) => p.split(".").reduce((a, k) => (a ? a[k] : undefined), o);
 const setPath = (o, p, v) => { const ks = p.split("."); const last = ks.pop(); ks.reduce((a, k) => (a[k] ??= {}), o)[last] = v; };
 function fmtDate(d) {
@@ -417,21 +421,6 @@ function losDays() {
   if (isNaN(a) || isNaN(d)) return null;
   return Math.round((d - a) / 86400000);
 }
-const lineAmt = it => Math.round(num(it.qty) * num(it.unit) * 100) / 100;
-const secTotal = s => s.items.reduce((t, it) => t + lineAmt(it), 0);
-const cur = () => state.invoice.currency || "";
-
-function totals() {
-  const gross = state.sections.reduce((t, s) => t + secTotal(s), 0);
-  const st = state.settlement;
-  const eligible = Math.max(0, gross - num(st.discount) - num(st.nonCovered));
-  const afterDed = Math.max(0, eligible - num(st.deductible));
-  const coins = afterDed * num(st.copayPct) / 100;
-  const patientShare = num(st.nonCovered) + Math.min(eligible, num(st.deductible)) + coins;
-  const claimed = Math.max(0, afterDed - coins);
-  return { gross, eligible, patientShare, claimed, balance: patientShare - num(st.paidByPatient) };
-}
-
 /* ---------- persistence ---------- */
 function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {} }
 function load() {
@@ -439,6 +428,17 @@ function load() {
 }
 function normalise(st) {
   if (String(st.report.references || "").startsWith(LEGACY_REF_PREFIX)) st.report.references = "";
+  // this is a medical report only: drop any financial data carried by older case files
+  delete st.settlement; delete st.invoice.currency; delete st.invoice.printedTotal;
+  (st.sections || []).forEach(sec => sec.items.forEach(it => { delete it.unit; delete it.amount; }));
+  const L = st.labs || {};
+  if (L.micro && L.micro.bcx && !L.micro.bcx1) { L.micro.bcx1 = L.micro.bcx; delete L.micro.bcx; }
+  Object.entries(L.studies || {}).forEach(([id, x]) => {
+    if (!x || (!has(x.res) && !has(x.text))) return;
+    st.imaging ??= {}; const im = (st.imaging[id] ??= { rows: {} });
+    if (!has(im.impression)) im.impression = [x.res, x.text].filter(has).join(" — ");
+  });
+  if (L.studies) L.studies = {};
   return st;
 }
 function merge(base, data) {
@@ -488,61 +488,43 @@ function renderSections() {
     box.className = "section-box";
     box.innerHTML = `
       <div class="section-head">
-        <input data-s="title" placeholder="Category, e.g. Laboratory" />
+        <input data-s="title" placeholder="Group, e.g. Laboratory" />
         <button class="small" data-a="up" title="Move up">↑</button>
         <button class="small" data-a="down" title="Move down">↓</button>
         <button class="small danger" data-a="del" title="Delete category">✕</button>
       </div>
       <div class="scroll"><table class="edit">
-        <thead><tr><th style="width:62px">Rev.</th><th style="width:110px">CPT/HCPCS</th><th style="width:96px">Date(s)</th><th>Description</th><th style="width:62px">Qty</th><th style="width:110px">Unit price</th><th style="width:110px;text-align:right">Amount</th><th></th></tr></thead>
+        <thead><tr><th style="width:120px">CPT/HCPCS</th><th style="width:100px">Date(s)</th><th>Service / procedure</th><th style="width:70px">Times</th><th></th></tr></thead>
         <tbody></tbody>
       </table></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-        <button class="small" data-a="add">+ Add line</button>
-        <div class="subtotal">Subtotal: <span data-sub></span> ${esc(cur())}</div>
-      </div>
-      <label style="margin-top:8px">Justification for this category (shown in report)<textarea data-s="justification" style="min-height:44px"></textarea></label>`;
+      <div style="margin-top:6px"><button class="small" data-a="add">+ Add service</button></div>
+      <label style="margin-top:8px">Clinical indication for this group (shown in report)<textarea data-s="justification" style="min-height:44px"></textarea></label>`;
     box.querySelectorAll("[data-s]").forEach(el => {
       el.value = s[el.dataset.s] ?? "";
       el.oninput = () => { s[el.dataset.s] = el.value; changed(false); };
     });
     const tb = box.querySelector("tbody");
-    const sub = box.querySelector("[data-sub]");
-    const refreshSub = () => { sub.textContent = money(secTotal(s)); };
     s.items.forEach((it, ii) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td><input data-f="rev" /></td><td><input data-f="code" /></td><td><input data-f="dates" /></td>
+        <td><input data-f="code" /></td><td><input data-f="dates" /></td>
         <td><input data-f="desc" /></td><td><input data-f="qty" type="number" step="any" /></td>
-        <td><input data-f="unit" type="number" step="0.01" /></td><td class="num" data-amt></td>
-        <td><button class="small danger" title="Remove line">✕</button></td>`;
-      const amt = tr.querySelector("[data-amt]");
-      amt.textContent = money(lineAmt(it));
+        <td><button class="small danger" title="Remove service">✕</button></td>`;
       tr.querySelectorAll("[data-f]").forEach(el => {
         el.value = it[el.dataset.f] ?? "";
-        el.oninput = () => { it[el.dataset.f] = el.value; amt.textContent = money(lineAmt(it)); refreshSub(); changed(false); };
+        el.oninput = () => { it[el.dataset.f] = el.value; changed(false); };
+        if (el.dataset.f === "code" || el.dataset.f === "desc") el.onchange = () => { renderLabs(); renderImaging(); changed(); };
       });
       tr.querySelector("button").onclick = () => { s.items.splice(ii, 1); renderSections(); changed(); };
       tb.appendChild(tr);
     });
-    refreshSub();
-    box.querySelector('[data-a="add"]').onclick = () => { s.items.push({ rev: "", code: "", dates: "", desc: "", qty: 1, unit: "" }); renderSections(); changed(); };
-    box.querySelector('[data-a="del"]').onclick = () => { if (confirm(`Delete category “${s.title || "untitled"}” and its ${s.items.length} line(s)?`)) { state.sections.splice(si, 1); renderSections(); changed(); } };
+    box.querySelector('[data-a="add"]').onclick = () => { s.items.push({ rev: "", code: "", dates: "", desc: "", qty: 1 }); renderSections(); changed(); };
+    box.querySelector('[data-a="del"]').onclick = () => { if (confirm(`Delete group “${s.title || "untitled"}” and its ${s.items.length} service(s)?`)) { state.sections.splice(si, 1); renderSections(); changed(); } };
     box.querySelector('[data-a="up"]').onclick = () => { if (si > 0) { [state.sections[si - 1], state.sections[si]] = [state.sections[si], state.sections[si - 1]]; renderSections(); changed(); } };
     box.querySelector('[data-a="down"]').onclick = () => { if (si < state.sections.length - 1) { [state.sections[si + 1], state.sections[si]] = [state.sections[si], state.sections[si + 1]]; renderSections(); changed(); } };
     host.appendChild(box);
   });
-  if ($("#labsHost")) renderLabs();
-}
-
-function renderTotals() {
-  const t = totals(), c = esc(cur());
-  $("#totalsBox").innerHTML = `
-    <span>Gross charges</span><span class="t">${money(t.gross)} ${c}</span>
-    <span>Eligible after discount / non-covered</span><span class="t">${money(t.eligible)} ${c}</span>
-    <span>Patient responsibility</span><span class="t">${money(t.patientShare)} ${c}</span>
-    <span>Balance due from patient</span><span class="t">${money(t.balance)} ${c}</span>
-    <span class="big">Amount claimed from insurer</span><span class="t big">${money(t.claimed)} ${c}</span>`;
+  if ($("#labsHost")) { renderLabs(); renderImaging(); }
 }
 
 /* ---------- clinical knowledge used by checks & drafting ---------- */
@@ -581,15 +563,23 @@ const LAB_PANELS = [
     { id: "sbp", name: "Systolic BP", unit: "mmHg", r: [B(1, 6, 90, 110), B(6, 12, 97, 120), B(12, 18, 110, 131), B(18, 200, 90, 129)], cl: 70, ch: 180 },
     { id: "dbp", name: "Diastolic BP", unit: "mmHg", r: [B(1, 6, 55, 75), B(6, 12, 57, 80), B(12, 18, 64, 83), B(18, 200, 60, 84)], ch: 120 },
     { id: "spo2", name: "SpO₂ (room air)", unit: "%", r: ALL(95, 100), cl: 90 },
-    { id: "wt", name: "Body weight", unit: "kg", r: [] }
+    { id: "wt", name: "Body weight", unit: "kg", r: [] },
+    { id: "ht", name: "Height", unit: "cm", r: [] }
   ] },
   { id: "cbc", title: "Complete blood count", codes: /\b8502[57]\b/, tests: [
     { id: "wbc", name: "WBC", unit: "×10⁹/L", r: [B(1, 6, 5.0, 15.5), B(6, 12, 4.5, 13.5), B(12, 18, 4.5, 13.0), B(18, 200, 4.0, 11.0)], cl: 2, ch: 30 },
     { id: "anc", name: "Neutrophils (absolute)", unit: "×10⁹/L", r: [B(1, 6, 1.5, 8.5), B(6, 18, 1.8, 8.0), B(18, 200, 2.0, 7.5)], cl: 0.5 },
     { id: "alc", name: "Lymphocytes (absolute)", unit: "×10⁹/L", r: [B(1, 6, 2.0, 8.0), B(6, 12, 1.5, 6.5), B(12, 18, 1.2, 5.2), B(18, 200, 1.0, 4.8)] },
+    { id: "mono", name: "Monocytes (absolute)", unit: "×10⁹/L", r: ALL(0.2, 1.0) },
+    { id: "eos", name: "Eosinophils (absolute)", unit: "×10⁹/L", r: ALL(0.0, 0.5) },
+    { id: "baso", name: "Basophils (absolute)", unit: "×10⁹/L", r: ALL(0.0, 0.2) },
+    { id: "rbc", name: "RBC", unit: "×10¹²/L", r: [B(1, 6, 3.9, 5.3), B(6, 12, 4.0, 5.2), B(12, 18, 4.1, 5.1, "F"), B(12, 18, 4.5, 5.3, "M"), B(18, 200, 4.0, 5.2, "F"), B(18, 200, 4.5, 5.9, "M")] },
     { id: "hb", name: "Haemoglobin", unit: "g/dL", r: [B(1, 6, 11.0, 14.0), B(6, 12, 11.5, 15.5), B(12, 18, 12.0, 16.0, "F"), B(12, 18, 13.0, 16.0, "M"), B(18, 200, 12.0, 15.5, "F"), B(18, 200, 13.5, 17.5, "M")], cl: 7, ch: 20 },
     { id: "hct", name: "Haematocrit", unit: "%", r: [B(1, 6, 33, 42), B(6, 12, 35, 45), B(12, 18, 36, 46, "F"), B(12, 18, 37, 49, "M"), B(18, 200, 36, 46, "F"), B(18, 200, 41, 53, "M")], cl: 20, ch: 60 },
     { id: "mcv", name: "MCV", unit: "fL", r: [B(1, 6, 70, 86), B(6, 12, 77, 95), B(12, 18, 78, 98), B(18, 200, 80, 100)] },
+    { id: "mch", name: "MCH", unit: "pg", r: [B(1, 6, 24, 30), B(6, 12, 25, 33), B(12, 18, 25, 35), B(18, 200, 27, 33)] },
+    { id: "mchc", name: "MCHC", unit: "g/dL", r: [B(1, 18, 31, 37), B(18, 200, 32, 36)] },
+    { id: "rdw", name: "RDW", unit: "%", r: ALL(11.5, 14.5) },
     { id: "plt", name: "Platelets", unit: "×10⁹/L", r: ALL(150, 450), cl: 50, ch: 1000 }
   ] },
   { id: "chem", title: "Chemistry — electrolytes, renal & liver", codes: /\b8005[34]\b|\b80048\b|\b80069\b/, tests: [
@@ -599,7 +589,7 @@ const LAB_PANELS = [
     { id: "hco3", name: "Bicarbonate (total CO₂)", unit: "mmol/L", r: [B(1, 18, 20, 28), B(18, 200, 22, 29)], cl: 10, ch: 40 },
     { id: "bun", name: "Urea nitrogen (BUN)", unit: "mg/dL", r: [B(1, 18, 5, 18), B(18, 200, 7, 20)], ch: 100 },
     { id: "cr", name: "Creatinine", unit: "mg/dL", r: [B(1, 6, 0.2, 0.5), B(6, 12, 0.3, 0.7), B(12, 18, 0.5, 1.0), B(18, 200, 0.6, 1.1, "F"), B(18, 200, 0.7, 1.3, "M")] },
-    { id: "glu", name: "Glucose", unit: "mg/dL", r: ALL(70, 110), cl: 40, ch: 400 },
+    { id: "glu", name: "Glucose (random)", unit: "mg/dL", r: ALL(70, 140), cl: 40, ch: 400 },
     { id: "ca", name: "Calcium (total)", unit: "mg/dL", r: [B(1, 18, 8.8, 10.8), B(18, 200, 8.6, 10.2)], cl: 6.5, ch: 13 },
     { id: "tp", name: "Total protein", unit: "g/dL", r: [B(1, 18, 6.0, 8.0), B(18, 200, 6.0, 8.3)] },
     { id: "alb", name: "Albumin", unit: "g/dL", r: [B(1, 18, 3.8, 5.4), B(18, 200, 3.5, 5.0)] },
@@ -607,6 +597,15 @@ const LAB_PANELS = [
     { id: "alt", name: "ALT", unit: "U/L", r: [B(1, 18, 5, 30), B(18, 200, 7, 56)] },
     { id: "ast", name: "AST", unit: "U/L", r: [B(1, 18, 15, 40), B(18, 200, 10, 40)] },
     { id: "alp", name: "Alkaline phosphatase", unit: "U/L", r: [B(1, 12, 150, 420), B(12, 18, 70, 390), B(18, 200, 44, 147)] }
+  ] },
+  { id: "calc", title: "Calculated indices (automatic)", calcPanel: true, tests: [
+    { id: "ag", name: "Anion gap [Na − (Cl + HCO₃)]", unit: "mmol/L", r: ALL(8, 16), dp: 0, calc: i => ok3(rv("na", i), rv("cl", i), rv("hco3", i)) ? rv("na", i) - rv("cl", i) - rv("hco3", i) : null },
+    { id: "osm", name: "Calculated osmolality [2Na + Glu/18 + BUN/2.8]", unit: "mOsm/kg", r: ALL(275, 295), dp: 0, calc: i => ok3(rv("na", i), rv("glu", i), rv("bun", i)) ? 2 * rv("na", i) + rv("glu", i) / 18 + rv("bun", i) / 2.8 : null },
+    { id: "bcr", name: "BUN : creatinine ratio", unit: "", r: ALL(10, 20), dp: 0, calc: i => ok3(rv("bun", i), rv("cr", i), 1) && rv("cr", i) > 0 ? rv("bun", i) / rv("cr", i) : null },
+    { id: "cca", name: "Albumin-corrected calcium [Ca + 0.8 × (4 − Alb)]", unit: "mg/dL", r: [B(1, 18, 8.8, 10.8), B(18, 200, 8.6, 10.2)], dp: 1, calc: i => ok3(rv("ca", i), rv("alb", i), 1) ? rv("ca", i) + 0.8 * (4 - rv("alb", i)) : null },
+    { id: "glob", name: "Globulin [TP − Alb]", unit: "g/dL", r: ALL(2.0, 3.5), dp: 1, calc: i => ok3(rv("tp", i), rv("alb", i), 1) ? rv("tp", i) - rv("alb", i) : null },
+    { id: "agr", name: "Albumin : globulin ratio", unit: "", r: ALL(1.1, 2.5), dp: 2, calc: i => ok3(rv("tp", i), rv("alb", i), 1) && rv("tp", i) > rv("alb", i) ? rv("alb", i) / (rv("tp", i) - rv("alb", i)) : null },
+    { id: "egfr", name: "eGFR (Schwartz bedside < 18 y; CKD-EPI 2021 ≥ 18 y)", unit: "mL/min/1.73 m²", r: ALL(90, null), dp: 0, calc: i => egfrAt(i) }
   ] },
   { id: "minerals", title: "Magnesium & phosphorus", codes: /\b83735\b|\b84100\b/, tests: [
     { id: "mg", name: "Magnesium", unit: "mg/dL", r: [B(1, 18, 1.7, 2.3), B(18, 200, 1.7, 2.4)], cl: 1.0, ch: 4.9 },
@@ -626,38 +625,83 @@ const LAB_PANELS = [
     { id: "trop", name: "Troponin I", unit: "ng/mL", r: ALL(0, 0.04) },
     { id: "bnp", name: "BNP", unit: "pg/mL", r: ALL(0, 100) }
   ] },
-  { id: "ua", title: "Urinalysis", codes: /\b8100[0-3]\b/, tests: [
+  { id: "ua", title: "Urinalysis (with microscopy)", codes: /\b8100[0-3]\b/, tests: [
+    { id: "ucol", name: "Colour", qual: ["Yellow", "Straw", "Amber", "Dark yellow", "Red", "Brown"], normal: ["Yellow", "Straw"] },
+    { id: "uclar", name: "Clarity", qual: ["Clear", "Slightly cloudy", "Cloudy", "Turbid"], normal: ["Clear"] },
     { id: "usg", name: "Specific gravity", unit: "", r: ALL(1.005, 1.030), dp: 3 },
     { id: "uph", name: "pH", unit: "", r: ALL(4.5, 8.0) },
     { id: "uket", name: "Ketones", qual: POSNEG, normal: ["Negative"] },
     { id: "uprot", name: "Protein", qual: POSNEG, normal: ["Negative", "Trace"] },
     { id: "uglu", name: "Glucose", qual: POSNEG, normal: ["Negative"] },
     { id: "ublood", name: "Blood", qual: POSNEG, normal: ["Negative"] },
+    { id: "ubil", name: "Bilirubin", qual: POSNEG, normal: ["Negative"] },
+    { id: "uuro", name: "Urobilinogen", qual: ["Normal", "Increased"], normal: ["Normal"] },
     { id: "ule", name: "Leukocyte esterase", qual: POSNEG, normal: ["Negative"] },
     { id: "unit", name: "Nitrite", qual: ["Negative", "Positive"], normal: ["Negative"] },
     { id: "uwbc", name: "WBC", unit: "/HPF", r: ALL(0, 5) },
-    { id: "urbc", name: "RBC", unit: "/HPF", r: ALL(0, 2) }
+    { id: "urbc", name: "RBC", unit: "/HPF", r: ALL(0, 2) },
+    { id: "uepi", name: "Epithelial cells", unit: "/HPF", r: ALL(0, 5) },
+    { id: "ubact", name: "Bacteria", qual: ["None", "Few", "Moderate", "Many"], normal: ["None", "Few"] },
+    { id: "ucast", name: "Casts", qual: ["None", "Hyaline 0–2/LPF", "Hyaline > 2/LPF", "Granular", "RBC casts", "WBC casts"], normal: ["None", "Hyaline 0–2/LPF"] },
+    { id: "ucrys", name: "Crystals", qual: ["None", "Amorphous", "Calcium oxalate", "Uric acid", "Triple phosphate"], normal: ["None", "Amorphous"] }
+  ] },
+  { id: "ecg", title: "ECG measurements", group: "imaging", codes: /\b9300[0-5]\b|\b93010\b/, tests: [
+    { id: "ecghr", name: "Ventricular rate", unit: "bpm", r: [B(1, 6, 80, 140), B(6, 12, 70, 120), B(12, 200, 60, 100)] },
+    { id: "rhythm", name: "Rhythm", qual: ["Sinus rhythm", "Sinus arrhythmia", "Sinus tachycardia", "Sinus bradycardia", "SVT", "Atrial fibrillation / flutter", "Ventricular ectopy", "Other"], normal: ["Sinus rhythm", "Sinus arrhythmia"] },
+    { id: "pr", name: "PR interval", unit: "ms", r: [B(1, 6, 80, 150), B(6, 12, 90, 170), B(12, 18, 100, 180), B(18, 200, 120, 200)] },
+    { id: "qrs", name: "QRS duration", unit: "ms", r: [B(1, 6, 40, 90), B(6, 12, 50, 90), B(12, 18, 60, 100), B(18, 200, 70, 110)] },
+    { id: "qt", name: "QT interval (measured)", unit: "ms", r: [] },
+    { id: "qtc", name: "QTc (Bazett, automatic)", unit: "ms", r: [B(0, 18, null, 450), B(18, 200, null, 450, "M"), B(18, 200, null, 460, "F")], dp: 0, calc: i => ok3(rv("qt", i), rv("ecghr", i), 1) && rv("ecghr", i) > 0 ? rv("qt", i) / Math.sqrt(60 / rv("ecghr", i)) : null },
+    { id: "stseg", name: "ST segment", qual: ["Normal", "Depressed", "Elevated"], normal: ["Normal"] },
+    { id: "twave", name: "T waves", qual: ["Normal", "Flattened", "Inverted", "Peaked"], normal: ["Normal"] },
+    { id: "uwave", name: "U waves", qual: ["Absent", "Present"], normal: ["Absent"] }
+  ] },
+  { id: "echo", title: "Echocardiographic measurements", group: "imaging", codes: /\b9330[6-8]\b/, tests: [
+    { id: "lvef", name: "LV ejection fraction", unit: "%", r: [B(0, 18, 55, 75), B(18, 200, 52, 72, "M"), B(18, 200, 54, 74, "F")] },
+    { id: "fs", name: "LV fractional shortening", unit: "%", r: ALL(28, 44) },
+    { id: "lvidz", name: "LV end-diastolic dimension (z-score)", unit: "z", r: ALL(-2, 2) },
+    { id: "tapse", name: "TAPSE", unit: "mm", r: [B(0, 18, null, null), B(18, 200, 17, null)], refNote: "age-specific z-score" },
+    { id: "rvfn", name: "RV systolic function", qual: ["Normal", "Reduced"], normal: ["Normal"] },
+    { id: "valves", name: "Valves", qual: ["Normal", "Trivial / mild regurgitation", "Significant regurgitation", "Stenosis"], normal: ["Normal", "Trivial / mild regurgitation"] },
+    { id: "rwma", name: "Regional wall motion", qual: ["Normal", "Abnormal"], normal: ["Normal"] },
+    { id: "effusion", name: "Pericardial effusion", qual: ["None", "Trivial", "Small", "Moderate", "Large"], normal: ["None", "Trivial"] },
+    { id: "ivc", name: "IVC size / collapsibility", qual: ["Normal size & collapse", "Small, > 50% collapse", "Dilated, < 50% collapse"], normal: ["Normal size & collapse"] }
   ] }
 ];
+// helpers used by calculated tests (raw entered values only, so calculations never chain)
+const rv = (id, i) => parseVal((state.labs?.v?.[id] || [])[i]);
+const ok3 = (a, b, c) => [a, b, c].every(n => !isNaN(n));
+const firstEntered = id => { for (const x of state.labs?.v?.[id] || []) { const n = parseVal(x); if (!isNaN(n)) return n; } return NaN; };
+function egfrAt(i) {
+  const cr = rv("cr", i), age = ageAt(state.patient.dob, state.encounter.admit);
+  if (isNaN(cr) || cr <= 0 || age === null) return null;
+  if (age < 18) { const ht = firstEntered("ht"); return age >= 1 && !isNaN(ht) ? 0.413 * ht / cr : null; }
+  const sx = (state.patient.sex || "").charAt(0).toUpperCase(); if (!sx) return null;
+  const k = sx === "F" ? 0.7 : 0.9, a = sx === "F" ? -0.241 : -0.302;
+  return 142 * Math.pow(Math.min(cr / k, 1), a) * Math.pow(Math.max(cr / k, 1), -1.2) * Math.pow(0.9938, age) * (sx === "F" ? 1.012 : 1);
+}
+// BioFire FilmArray GI panel menu: 13 bacterial, 4 parasitic, 5 viral targets
+const GI_TARGETS = ["Campylobacter (jejuni / coli / upsaliensis)", "Clostridioides difficile toxin A/B", "Plesiomonas shigelloides", "Salmonella", "Vibrio (parahaemolyticus / vulnificus / cholerae)",
+  "Vibrio cholerae", "Yersinia enterocolitica", "Enteroaggregative E. coli (EAEC)", "Enteropathogenic E. coli (EPEC)", "Enterotoxigenic E. coli (ETEC) lt/st",
+  "Shiga-like toxin-producing E. coli (STEC) stx1/stx2", "E. coli O157", "Shigella / enteroinvasive E. coli (EIEC)",
+  "Cryptosporidium", "Cyclospora cayetanensis", "Entamoeba histolytica", "Giardia lamblia",
+  "Adenovirus F 40/41", "Astrovirus", "Norovirus GI/GII", "Rotavirus A", "Sapovirus (I, II, IV, V)"];
 const MICRO = [
-  { id: "bcx", name: "Blood culture", codes: /\b8704[01]\b/ },
-  { id: "scx", name: "Stool culture", codes: /\b8704[56]\b/ },
-  { id: "gipcr", name: "GI pathogen panel (PCR)", codes: /\b8750[5-7]\b/ },
-  { id: "cdiff", name: "C. difficile toxin / PCR", codes: /\b87493\b|\b87324\b/ },
-  { id: "onp", name: "Ova & parasites", codes: /\b8717[7]\b|\b87209\b/ },
-  { id: "ucx", name: "Urine culture", codes: /\b8708[68]\b/ }
+  { id: "bcx1", name: "Blood culture — set 1 (aerobic + anaerobic)", codes: /\b8704[01]\b/, sens: true },
+  { id: "bcx2", name: "Blood culture — set 2 (aerobic + anaerobic)", codes: /\b8704[01]\b/, sens: true },
+  { id: "scx", name: "Stool culture (Salmonella, Shigella, Campylobacter, E. coli)", codes: /\b8704[56]\b/, sens: true },
+  { id: "gipcr", name: "GI pathogen panel (multiplex PCR)", codes: /\b8750[5-7]\b/, targets: GI_TARGETS },
+  { id: "cdiff", name: "C. difficile toxin gene (PCR)", codes: /\b87493\b|\b87324\b/ },
+  { id: "onp", name: "Ova & parasites (concentration & identification)", codes: /\b8717[7]\b|\b87209\b/ },
+  { id: "ucx", name: "Urine culture", codes: /\b8708[68]\b/, sens: true }
 ];
 const MICRO_RESULTS = ["", "Pending", "Negative / no growth", "Positive"];
-const STUDIES = [
-  { id: "ecg", name: "ECG (12-lead)", codes: /\b9300[0-5]\b|\b93010\b/ },
-  { id: "echo", name: "Echocardiogram", codes: /\b9330[6-8]\b/ },
-  { id: "ct", name: "CT abdomen & pelvis", codes: /\b7417[6-8]\b|\b7415[0-2]\b|\b7416[0-2]\b/ },
-  { id: "cxr", name: "Chest X-ray", codes: /\b7104[5-8]\b|\b7101[01]\b|\b7102[0-2]\b/ },
-  { id: "us", name: "Ultrasound abdomen", codes: /\b7670[05]\b/ }
-];
 // Organism → more specific ICD-10 code than "unspecified food poisoning".
 const ORGANISMS = [
-  [/salmonella/i, "A02.0", "Salmonella enteritis"], [/shigella/i, "A03.9", "Shigellosis"],
+  [/vibrio \(parahaemolyticus/i, null, null], [/plesiomonas/i, "A04.8", "Other specified bacterial intestinal infections"],
+  [/eiec|enteroinvasive/i, "A04.2", "Enteroinvasive E. coli infection"], [/astrovirus|sapovirus/i, "A08.3", "Other viral enteritis"],
+  [/cyclospora/i, "A07.8", "Other specified protozoal intestinal diseases"],
+  [/salmonella/i, "A02.0", "Salmonella enteritis"], [/^shigella \//i, "A03.9", "Shigellosis"], [/shigella/i, "A03.9", "Shigellosis"],
   [/campylobacter/i, "A04.5", "Campylobacter enteritis"], [/o157|stec|ehec|shiga/i, "A04.3", "Enterohaemorrhagic E. coli infection"],
   [/etec|enterotoxigenic/i, "A04.1", "Enterotoxigenic E. coli infection"], [/epec|enteropathogenic/i, "A04.0", "Enteropathogenic E. coli infection"],
   [/e\.?\s*coli/i, "A04.4", "Other intestinal E. coli infection"], [/difficile/i, "A04.7", "Enterocolitis due to C. difficile"],
@@ -700,7 +744,10 @@ const decs = v => (String(v).split(".")[1] || "").length;
 const refText = t => {
   if (t.qual) return t.normal.join(" / ");
   const r = refFor(t); if (!r) return "";
-  const d = t.dp ?? Math.max(decs(r.low), decs(r.high));
+  if (r.low == null && r.high == null) return t.refNote || "";
+  const d = t.dp ?? Math.max(decs(r.low ?? 0), decs(r.high ?? 0));
+  if (r.low == null) return `≤ ${(+r.high).toFixed(d)}`;
+  if (r.high == null) return `≥ ${(+r.low).toFixed(d)}`;
   return `${(+r.low).toFixed(d)} – ${(+r.high).toFixed(d)}`;
 };
 const unitOf = t => (refFor(t)?.unit ?? t.unit ?? "");
@@ -712,8 +759,8 @@ function flagOf(t, v) {
   if (!r || isNaN(n)) return "";
   if (t.cl != null && n < t.cl) return "LL";
   if (t.ch != null && n > t.ch) return "HH";
-  if (n < r.low) return "L";
-  if (n > r.high) return "H";
+  if (r.low != null && n < r.low) return "L";
+  if (r.high != null && n > r.high) return "H";
   return "N";
 }
 const FLAG_TEXT = { L: "Low", H: "High", LL: "Critical low", HH: "Critical high", A: "Abnormal", N: "" };
@@ -722,17 +769,23 @@ const FLAG_TEXT = { L: "Low", H: "High", LL: "Critical low", HH: "Critical high"
 function labsState() {
   state.labs ??= {};
   const L = state.labs;
-  L.cols ??= ["Admission", "Day 3", "Discharge"];
+  L.cols ??= ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5"];
   L.v ??= {}; L.micro ??= {}; L.studies ??= {}; L.showAll ??= false; L.comment ??= "";
   return L;
 }
-const vals = id => labsState().v[id] || [];
+const vals = id => {
+  const t = TESTS[id];
+  if (t && t.calc) return labsState().cols.map((_, i) => { const v = t.calc(i); return v == null || !isFinite(v) ? undefined : String(+v.toFixed(t.dp ?? 1)); });
+  return labsState().v[id] || [];
+};
 const series = id => labsState().cols.map((col, i) => ({ col, raw: vals(id)[i], n: parseVal(vals(id)[i]) })).filter(x => has(x.raw));
 const numSeries = id => series(id).filter(x => !isNaN(x.n));
 const billedCodes = () => allItems().map(it => it.code || "").join(" ");
 const panelHasValues = p => p.tests.some(t => vals(t.id).some(has));
-const panelVisible = p => p.always || labsState().showAll || (p.codes && p.codes.test(billedCodes())) || panelHasValues(p);
-const extraVisible = (x, store) => labsState().showAll || x.codes.test(billedCodes()) || has(store[x.id]?.res) || has(store[x.id]?.text);
+const panelVisible = p => p.always || labsState().showAll || (p.codes && p.codes.test(billedCodes())) || panelHasValues(p) ||
+  (p.calcPanel && LAB_PANELS.some(q => q.id === "chem" && panelVisible(q)));
+const extraVisible = (x, store) => labsState().showAll || x.codes.test(billedCodes()) || has(store[x.id]?.res) || has(store[x.id]?.text) || Object.values(store[x.id]?.targets || {}).some(has);
+const ageLabel = () => { const a = ageAt(state.patient.dob, state.encounter.admit); return `${a !== null ? `age ${a}` : "adults"}${state.patient.sex ? `, ${esc(state.patient.sex.toLowerCase())}` : ""}`; };
 
 /* ---------- analysis: interpret entered values against the reference standard ---------- */
 function analyze() {
@@ -743,13 +796,15 @@ function analyze() {
   const r = id => refFor(T[id]);
   const min = id => Math.min(...ser(id).map(x => x.n));
   const max = id => Math.max(...ser(id).map(x => x.n));
-  const anyLow = id => ser(id).length && r(id) && ser(id).some(x => x.n < r(id).low);
-  const anyHigh = id => ser(id).length && r(id) && ser(id).some(x => x.n > r(id).high);
+  const anyLow = id => ser(id).length && r(id) && r(id).low != null && ser(id).some(x => x.n < r(id).low);
+  const anyHigh = id => ser(id).length && r(id) && r(id).high != null && ser(id).some(x => x.n > r(id).high);
+  const abnQual = id => series(id).filter(x => !T[id].normal.includes(x.raw));
+  const info = text => F.push({ text, lvl: "info" });
   const u = id => unitOf(T[id]);
   const trend = id => {
     const s = ser(id); if (s.length < 2) return "";
     const last = s[s.length - 1], rr = r(id);
-    const ok = rr && last.n >= rr.low && last.n <= rr.high;
+    const ok = rr && (rr.low == null || last.n >= rr.low) && (rr.high == null || last.n <= rr.high);
     return ` Trend: ${s.map(x => `${fmtN(x.n, T[id])} (${x.col})`).join(" → ")}${ok ? " — normalised." : " — still outside reference."}`;
   };
   const add = (text, o = {}) => F.push({ text, lvl: "abn", ...o });
@@ -779,7 +834,19 @@ function analyze() {
   }
   if (anyLow("mg")) add(`Hypomagnesaemia: lowest magnesium ${min("mg")} mg/dL — impairs potassium correction.${trend("mg")}`, { code: "E83.4", codeName: "Disorders of magnesium metabolism" });
   if (anyLow("phos")) add(`Hypophosphataemia: lowest phosphorus ${min("phos")} mg/dL.`, { code: "E83.3", codeName: "Disorders of phosphorus metabolism" });
-  if (anyLow("ca")) add(`Hypocalcaemia: lowest calcium ${min("ca")} mg/dL (interpret with albumin).`);
+  if (anyLow("ca")) {
+    if (ser("cca").length && !anyLow("cca")) info(`Total calcium low (${min("ca")} mg/dL) but albumin-corrected calcium is normal (${min("cca")} mg/dL) — reflects low albumin, not true hypocalcaemia.`);
+    else add(`Hypocalcaemia: lowest calcium ${min("ca")} mg/dL${ser("cca").length ? `; albumin-corrected ${min("cca")} mg/dL` : " (interpret with albumin)"}.`, { code: "E83.5", codeName: "Disorders of calcium metabolism" });
+  }
+  if (anyHigh("osm")) add(`Raised calculated osmolality: up to ${max("osm")} mOsm/kg — hypertonic state.${trend("osm")}`, { supports: "E86" });
+  if (anyLow("osm")) add(`Low calculated osmolality: down to ${min("osm")} mOsm/kg.`);
+  if (anyHigh("ag") && !anyLow("hco3")) add(`Raised anion gap: up to ${max("ag")} mmol/L — consider ketosis or lactate.`);
+  if (ser("egfr").length) {
+    const g = min("egfr"), how = isChild() ? "bedside Schwartz" : "CKD-EPI 2021";
+    if (g < 60) add(`Reduced eGFR: lowest ${g} mL/min/1.73 m² (${how}) — impaired kidney function; reassess after rehydration (KDIGO staging needs a baseline).${trend("egfr")}`, { supports: "E86" });
+    else if (g < 90) info(`eGFR ${g} mL/min/1.73 m² (${how}) — mildly below 90; interpret in the context of dehydration.${trend("egfr")}`);
+  }
+  if (anyLow("agr")) info(`Low albumin : globulin ratio (${min("agr")}).`);
 
   // Renal / volume status
   const ratioCol = L.cols.findIndex((_, i) => has(vals("bun")[i]) && has(vals("cr")[i]));
@@ -795,6 +862,8 @@ function analyze() {
   if (anyHigh("wbc")) add(`Leukocytosis: WBC up to ${max("wbc")} ×10⁹/L${anyHigh("anc") ? ` with neutrophilia (ANC ${max("anc")})` : ""} — supports a bacterial process.${trend("wbc")}`, { supports: "A0" });
   if (anyHigh("crp")) add(`Raised CRP: up to ${max("crp")} mg/L${max("crp") > 100 ? " (markedly raised)" : ""} — systemic inflammatory response, supports bacterial aetiology.${trend("crp")}`, { supports: "A0" });
   if (anyHigh("lact")) add(`Raised lactate: up to ${max("lact")} mmol/L — tissue hypoperfusion; supports need for IV resuscitation and close monitoring.${trend("lact")}`, { supports: "E86" });
+  if (anyLow("hb")) add(`Anaemia: haemoglobin down to ${min("hb")} g/dL${anyLow("mcv") ? `, microcytic (MCV ${min("mcv")} fL)` : ""}.`, { code: "D64.9", codeName: "Anaemia, unspecified" });
+  if (anyHigh("eos")) add(`Eosinophilia: up to ${max("eos")} ×10⁹/L — consider parasitic infection (correlate with ova & parasites / GI panel).`);
   if (anyLow("plt")) add(`Thrombocytopenia: platelets down to ${min("plt")} ×10⁹/L.`, { code: "D69.6", codeName: "Thrombocytopenia, unspecified" });
   if (anyLow("wbc")) add(`Leukopenia: WBC down to ${min("wbc")} ×10⁹/L.`, { code: "D72.8", codeName: "Other specified disorders of white blood cells" });
 
@@ -805,7 +874,7 @@ function analyze() {
     else if (x > uln) add(`Lipase mildly raised (${x} U/L, <3× upper limit) — non-diagnostic for pancreatitis.`, { lvl: "info" });
   }
   if (anyHigh("alt") || anyHigh("ast")) add(`Raised transaminases (ALT ${ser("alt").length ? max("alt") : "—"}, AST ${ser("ast").length ? max("ast") : "—"} U/L).`, { code: "R74.0", codeName: "Elevation of transaminase and LDH levels" });
-  if (anyHigh("glu")) add(`Hyperglycaemia: glucose up to ${max("glu")} mg/dL (stress response).`, { code: "R73.9", codeName: "Hyperglycaemia, unspecified" });
+  if (anyHigh("glu")) max("glu") >= 200 ? add(`Hyperglycaemia: glucose up to ${max("glu")} mg/dL.`, { code: "R73.9", codeName: "Hyperglycaemia, unspecified" }) : info(`Mild hyperglycaemia (max ${max("glu")} mg/dL) — likely stress response.`);
   if (anyLow("glu")) add(`Hypoglycaemia: glucose down to ${min("glu")} mg/dL.`, { code: "E16.2", codeName: "Hypoglycaemia, unspecified" });
   if (anyHigh("inr") || anyHigh("aptt")) add(`Prolonged coagulation times (INR ${ser("inr").length ? max("inr") : "—"}, aPTT ${ser("aptt").length ? max("aptt") : "—"} s).`);
   if (anyHigh("trop")) add(`Raised troponin I: up to ${max("trop")} ng/mL — biochemical myocardial injury; supports cardiac monitoring and echocardiography.`, { supports: "cardiac" });
@@ -813,23 +882,51 @@ function analyze() {
   if (anyHigh("bnp")) add(`Raised BNP: up to ${max("bnp")} pg/mL — myocardial strain.`, { supports: "cardiac" });
   const uti = ["ule", "unit"].some(id => series(id).some(x => !TESTS[id].normal.includes(x.raw)));
   if (uti) add("Urinalysis positive for leukocyte esterase/nitrite — evaluate for urinary tract infection.", { lvl: "info" });
+  const uOther = ["ublood", "ubil", "ucast", "ubact", "uclar"].flatMap(id => abnQual(id).map(x => `${T[id].name.toLowerCase()} ${x.raw} (${x.col})`));
+  if (uOther.length) info(`Other urinalysis findings: ${uOther.join("; ")}.`);
+
+  // ECG measurements
+  const lowLytes = anyLow("k") || anyLow("mg");
+  if (anyHigh("qtc")) add(`Prolonged QTc: up to ${max("qtc")} ms (Bazett; upper limit ${r("qtc").high} ms)${lowLytes ? " in the setting of hypokalaemia/hypomagnesaemia — justifies cardiac telemetry and supervised electrolyte correction" : ""}.${trend("qtc")}`, { code: "R94.3", codeName: "Abnormal results of cardiovascular function studies", supports: "cardiac" });
+  else if (ser("qtc").length) info(`QTc within reference on all ECGs (max ${max("qtc")} ms, Bazett).`);
+  const rh = abnQual("rhythm"); if (rh.length) add(`ECG rhythm: ${rh.map(x => `${x.raw} (${x.col})`).join(", ")}.`, { supports: "cardiac" });
+  const repol = ["stseg", "twave", "uwave"].flatMap(id => abnQual(id).map(x => `${T[id].name} ${x.raw.toLowerCase()} (${x.col})`));
+  if (repol.length) add(`ECG repolarisation changes: ${repol.join("; ")}${series("twave").some(x => x.raw === "Flattened") || series("uwave").some(x => x.raw === "Present") ? " — recognised ECG signs of hypokalaemia" : ""}.`, { supports: "cardiac" });
+  if (anyHigh("pr") || anyLow("pr")) add(`PR interval outside reference (${ser("pr").map(x => x.n).join(", ")} ms).`, { supports: "cardiac" });
+  if (anyHigh("qrs")) add(`Prolonged QRS duration: up to ${max("qrs")} ms.`, { supports: "cardiac" });
+  // Echocardiography
+  if (anyLow("lvef")) add(`Reduced LV ejection fraction: ${min("lvef")} % (reference ${refText(T.lvef)} %) — LV systolic dysfunction on echocardiography.`, { supports: "cardiac" });
+  else if (ser("lvef").length) info(`Echocardiography: normal LV systolic function (LVEF ${min("lvef")} %).`);
+  if (anyLow("fs")) add(`Reduced LV fractional shortening: ${min("fs")} %.`, { supports: "cardiac" });
+  if (anyHigh("lvidz")) add(`LV dilatation on echocardiography (LVEDD z-score ${max("lvidz")}).`, { supports: "cardiac" });
+  if (anyLow("tapse")) add(`Reduced TAPSE ${min("tapse")} mm — RV systolic dysfunction.`, { supports: "cardiac" });
+  ["rvfn", "valves", "rwma", "effusion"].forEach(id => { const a = abnQual(id); if (a.length) add(`Echocardiography — ${T[id].name}: ${a.map(x => x.raw.toLowerCase()).join(", ")}.`, { supports: "cardiac" }); });
+  if (series("ivc").some(x => /^Small/.test(x.raw))) add("Echocardiography: small, collapsing IVC — supports intravascular volume depletion.", { supports: "E86" });
 
   // Microbiology
+  const orgCode = txt => { const o = ORGANISMS.find(([re]) => re.test(txt || "")); return o && o[1] ? { code: o[1], codeName: o[2], specific: true } : {}; };
+  const posBcx = ["bcx1", "bcx2"].filter(id => (L.micro[id] || {}).res === "Positive");
   MICRO.forEach(m => {
     const x = L.micro[m.id] || {};
+    if (m.targets) {
+      const det = m.targets.filter(t => (x.targets || {})[t] === "Detected");
+      det.forEach(t => add(`GI pathogen panel: ${t} detected — identifies the enteric pathogen.`, { ...orgCode(t), supports: "A0" }));
+      if (!det.length && m.targets.every(t => (x.targets || {})[t] === "Not detected")) info(`GI pathogen panel: all ${m.targets.length} targets not detected.`);
+      else if (!det.length && x.res === "Pending") info(`${m.name}: result pending at time of report.`);
+      return;
+    }
+    const sens = has(x.sens) ? ` Susceptibility: ${x.sens}.` : "";
     if (x.res === "Positive") {
-      const org = ORGANISMS.find(([re]) => re.test(x.text || ""));
-      if (m.id === "bcx") add(`Positive blood culture${x.text ? `: ${x.text}` : ""} — bacteraemia; review for sepsis criteria.`, { code: "A41.9", codeName: "Sepsis, unspecified organism" });
-      else add(`Positive ${m.name}${x.text ? `: ${x.text}` : ""} — confirms infectious aetiology.`, org ? { code: org[1], codeName: org[2], specific: true, supports: "A0" } : { supports: "A0" });
-    } else if (x.res === "Negative / no growth") F.push({ text: `${m.name}: negative / no growth.`, lvl: "info" });
-    else if (x.res === "Pending") F.push({ text: `${m.name}: result pending at time of report.`, lvl: "info" });
+      if (/^bcx/.test(m.id)) {
+        const skin = /coagulase|epidermidis|\bCoNS\b|diphtheroid|micrococc|cutibacter|propionibacter/i.test(x.text || "");
+        if (skin && posBcx.length === 1) info(`${m.name}: ${x.text} in a single set — skin commensal, likely contaminant.${sens}`);
+        else add(`Positive ${m.name.split(" (")[0].toLowerCase()}${x.text ? `: ${x.text}` : ""}${posBcx.length === 2 ? " (both sets)" : ""} — bacteraemia; review for sepsis criteria.${sens}`, { code: "A41.9", codeName: "Sepsis, unspecified organism", supports: "A0" });
+      } else add(`Positive ${m.name.split(" (")[0]}${x.text ? `: ${x.text}` : ""} — confirms infectious aetiology.${sens}`, { ...orgCode(x.text), supports: "A0" });
+    } else if (x.res === "Negative / no growth") info(`${m.name}: negative / no growth.`);
+    else if (x.res === "Pending") info(`${m.name}: result pending at time of report.`);
   });
-  // Imaging & cardiac studies
-  STUDIES.forEach(s => {
-    const x = L.studies[s.id] || {};
-    if (x.res === "Abnormal") add(`${s.name}: ${x.text || "abnormal"}.`, s.id === "ecg" || s.id === "echo" ? { supports: "cardiac" } : {});
-    else if (x.res === "Normal") F.push({ text: `${s.name}: no significant abnormality${x.text ? ` (${x.text})` : ""}.`, lvl: "info" });
-  });
+  // Radiology, imaging & telemetry reports
+  analyzeImaging(add, info);
   return F;
 }
 
@@ -843,7 +940,7 @@ function labChecks(add) {
     if (f === "LL" || f === "HH") add("warn", `Critical value: ${t.name} ${x.raw} ${unitOf(t)} (${x.col}). Document notification and the action taken.`);
   })));
   // results that support a code that is not on the claim
-  F.filter(f => f.code && !coded(f.code)).forEach(f => add("info", `Results support ${f.code} ${f.codeName}${f.specific ? " — more specific than the current primary code; consider updating the diagnosis" : " — consider adding it to the diagnoses"}.`));
+  F.filter((f, i, all) => f.code && !coded(f.code) && all.findIndex(g => g.code === f.code) === i).forEach(f => add("info", `Results support ${f.code} ${f.codeName}${f.specific ? " — more specific than the current primary code; consider updating the diagnosis" : " — consider adding it to the diagnoses"}.`));
   // coded diagnoses that the entered results do not support
   const contra = [["E87.6", "k", "low", "potassium below reference"], ["E87.5", "k", "high", "potassium above reference"], ["E87.1", "na", "low", "sodium below reference"], ["E87.0", "na", "high", "sodium above reference"], ["E87.2", "hco3", "low", "low bicarbonate"]];
   contra.forEach(([code, id, dir, what]) => {
@@ -871,11 +968,49 @@ const cardiacSupport = () => {
 };
 
 /* ---------- investigations editor ---------- */
+function panelBlock(p, L) {
+  const colHead = L.cols.map((c, i) => `<th class="labcol"><input data-col="${i}" value="${esc(c)}" title="Column label (day or date)" /></th>`).join("");
+  let html = `<div class="lab-panel"><div class="lab-title">${esc(p.title)}</div><div class="scroll"><table class="edit lab">
+    <thead><tr><th>Test</th><th>Reference</th><th>Unit</th>${colHead}</tr></thead><tbody>`;
+  p.tests.forEach(t => {
+    html += `<tr><td class="tname">${esc(t.name)}</td><td class="ref">${esc(refText(t))}${refFor(t)?.custom ? ' <span title="Hospital-defined range">*</span>' : ""}</td><td class="ref">${esc(unitOf(t))}</td>`;
+    L.cols.forEach((_, i) => {
+      const v = vals(t.id)[i] ?? "", f = flagOf(t, v);
+      html += t.calc
+        ? `<td><div class="cell"><output data-calc="${t.id}" data-i="${i}" class="calc fl-${f}">${esc(v)}</output><span class="flag">${f && f !== "N" ? f : ""}</span></div></td>`
+        : t.qual
+        ? `<td><select data-t="${t.id}" data-i="${i}" class="fl-${f}">${["", ...t.qual].map(o => `<option ${o === v ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></td>`
+        : `<td><div class="cell"><input data-t="${t.id}" data-i="${i}" inputmode="decimal" value="${esc(v)}" class="fl-${f}" /><span class="flag">${f && f !== "N" ? f : ""}</span></div></td>`;
+    });
+    html += `</tr>`;
+  });
+  return html + `</tbody></table></div></div>`;
+}
+function refreshCalcs() {
+  document.querySelectorAll("[data-calc]").forEach(el => {
+    const t = TESTS[el.dataset.calc], v = vals(t.id)[+el.dataset.i] ?? "", f = flagOf(t, v);
+    el.textContent = v; el.className = "calc fl-" + f;
+    el.parentElement.querySelector(".flag").textContent = f && f !== "N" ? f : "";
+  });
+}
+function microBlock(L) {
+  const micro = MICRO.filter(m => extraVisible(m, L.micro));
+  if (!micro.length) return "";
+  return `<div class="lab-panel"><div class="lab-title">Microbiology</div><div class="scroll"><table class="edit lab"><thead><tr><th>Test</th><th style="width:190px">Result</th><th>Organism / details</th><th>Susceptibility</th></tr></thead><tbody>` +
+    micro.map(m => {
+      const x = L.micro[m.id] || {};
+      let row = `<tr><td class="tname">${esc(m.name)}</td><td><select data-m="${m.id}" data-f="res" class="fl-${x.res === "Positive" ? "A" : ""}">${MICRO_RESULTS.map(o => `<option ${o === x.res ? "selected" : ""}>${o}</option>`).join("")}</select></td>
+        <td><input data-m="${m.id}" data-f="text" value="${esc(x.text)}" placeholder="${m.targets ? "filled automatically from the targets below" : "e.g. Salmonella enterica"}" /></td>
+        <td>${m.sens ? `<input data-m="${m.id}" data-f="sens" value="${esc(x.sens)}" placeholder="S: ceftriaxone · R: ampicillin" />` : ""}</td></tr>`;
+      if (m.targets) row += `<tr><td colspan="4"><div class="gi-head"><span class="hint" style="margin:0">Panel targets (${m.targets.length})</span><button class="small" data-gi-all="${m.id}">All not detected</button></div><div class="gi-grid">` +
+        m.targets.map((t, ti) => { const v = (x.targets || {})[t] || ""; return `<label class="gi-t ${v === "Detected" ? "fl-A" : ""}"><span>${esc(t)}</span><select data-gi="${m.id}" data-ti="${ti}">${["", "Not detected", "Detected"].map(o => `<option ${o === v ? "selected" : ""}>${o}</option>`).join("")}</select></label>`; }).join("") + `</div></td></tr>`;
+      return row;
+    }).join("") + `</tbody></table></div></div>`;
+}
 function renderLabs() {
   const L = labsState();
-  const host = $("#labsHost");
+  const host = $("#labsHost"), imgHost = $("#imgPanelsHost");
   const age = ageAt(state.patient.dob, state.encounter.admit);
-  const colHead = L.cols.map((c, i) => `<th class="labcol"><input data-col="${i}" value="${esc(c)}" title="Column label (day or date)" /></th>`).join("");
   let html = `
     <div class="lab-toolbar">
       <span class="hint" style="margin:0">Standard ranges for: <b>${age !== null ? `age ${age}` : "adult (no DOB)"}${state.patient.sex ? ", " + esc(state.patient.sex.toLowerCase()) : ""}</b></span>
@@ -885,51 +1020,43 @@ function renderLabs() {
       <label style="display:inline-flex;gap:4px;align-items:center;font-weight:400"><input type="checkbox" id="labShowAll" style="width:auto;margin:0" ${L.showAll ? "checked" : ""} /> Show all tests</label>
       <button class="small" id="btnRefs">Reference ranges…</button>
     </div>`;
-  LAB_PANELS.filter(panelVisible).forEach(p => {
-    html += `<div class="lab-panel"><div class="lab-title">${esc(p.title)}</div><div class="scroll"><table class="edit lab">
-      <thead><tr><th>Test</th><th>Reference</th><th>Unit</th>${colHead}</tr></thead><tbody>`;
-    p.tests.forEach(t => {
-      html += `<tr><td class="tname">${esc(t.name)}</td><td class="ref">${esc(refText(t))}${refFor(t)?.custom ? ' <span title="Hospital-defined range">*</span>' : ""}</td><td class="ref">${esc(unitOf(t))}</td>`;
-      L.cols.forEach((_, i) => {
-        const v = vals(t.id)[i] ?? "", f = flagOf(t, v);
-        html += t.qual
-          ? `<td><select data-t="${t.id}" data-i="${i}" class="fl-${f}">${["", ...t.qual].map(o => `<option ${o === v ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></td>`
-          : `<td><div class="cell"><input data-t="${t.id}" data-i="${i}" inputmode="decimal" value="${esc(v)}" class="fl-${f}" /><span class="flag">${f && f !== "N" ? f : ""}</span></div></td>`;
-      });
-      html += `</tr>`;
-    });
-    html += `</tbody></table></div></div>`;
-  });
-  const micro = MICRO.filter(m => extraVisible(m, L.micro));
-  if (micro.length) {
-    html += `<div class="lab-panel"><div class="lab-title">Microbiology</div><table class="edit lab"><thead><tr><th>Test</th><th style="width:190px">Result</th><th>Organism / details</th></tr></thead><tbody>` +
-      micro.map(m => `<tr><td class="tname">${esc(m.name)}</td><td><select data-m="${m.id}" data-f="res" class="fl-${(L.micro[m.id] || {}).res === "Positive" ? "A" : ""}">${MICRO_RESULTS.map(o => `<option ${o === (L.micro[m.id] || {}).res ? "selected" : ""}>${o}</option>`).join("")}</select></td>
-        <td><input data-m="${m.id}" data-f="text" value="${esc((L.micro[m.id] || {}).text)}" placeholder="e.g. Salmonella enterica, ciprofloxacin-sensitive" /></td></tr>`).join("") + `</tbody></table></div>`;
-  }
-  const studies = STUDIES.filter(s => extraVisible(s, L.studies));
-  if (studies.length) {
-    html += `<div class="lab-panel"><div class="lab-title">Imaging &amp; cardiac studies</div><table class="edit lab"><thead><tr><th>Study</th><th style="width:150px">Result</th><th>Findings / impression</th></tr></thead><tbody>` +
-      studies.map(s => `<tr><td class="tname">${esc(s.name)}</td><td><select data-s2="${s.id}" data-f="res" class="fl-${(L.studies[s.id] || {}).res === "Abnormal" ? "A" : ""}">${["", "Normal", "Abnormal"].map(o => `<option ${o === (L.studies[s.id] || {}).res ? "selected" : ""}>${o}</option>`).join("")}</select></td>
-        <td><input data-s2="${s.id}" data-f="text" value="${esc((L.studies[s.id] || {}).text)}" placeholder="${s.id === "ecg" ? "e.g. sinus tachycardia, flattened T waves, U waves" : "findings"}" /></td></tr>`).join("") + `</tbody></table></div>`;
-  }
+  LAB_PANELS.filter(p => p.group !== "imaging" && panelVisible(p)).forEach(p => { html += panelBlock(p, L); });
+  html += microBlock(L);
   html += `<label style="margin-top:10px">Physician interpretation / comment (optional, printed under the analysis)<textarea id="labComment">${esc(L.comment)}</textarea></label>
-    <div class="analysis"><div class="lab-title">Automatic analysis</div><ul id="analysisList"></ul></div>`;
+    <div class="analysis"><div class="lab-title">Automatic analysis (laboratory, imaging &amp; cardiac)</div><ul id="analysisList"></ul></div>`;
   host.innerHTML = html;
+  if (imgHost) imgHost.innerHTML = LAB_PANELS.filter(p => p.group === "imaging" && panelVisible(p)).map(p => panelBlock(p, L)).join("");
 
-  host.querySelectorAll("[data-col]").forEach(el => el.oninput = () => { L.cols[+el.dataset.col] = el.value; changed(false); });
-  host.querySelectorAll("[data-t]").forEach(el => {
-    const t = TESTS[el.dataset.t], i = +el.dataset.i;
-    const upd = () => {
-      (L.v[t.id] ??= [])[i] = el.value.trim();
-      const f = flagOf(t, el.value.trim());
-      el.className = "fl-" + f;
-      const fl = el.parentElement.querySelector(".flag"); if (fl) fl.textContent = f && f !== "N" ? f : "";
-      changed(false);
-    };
-    el.oninput = upd; el.onchange = upd;
+  [host, imgHost].filter(Boolean).forEach(h => {
+    h.querySelectorAll("[data-col]").forEach(el => el.oninput = () => { L.cols[+el.dataset.col] = el.value; changed(false); });
+    h.querySelectorAll("[data-t]").forEach(el => {
+      const t = TESTS[el.dataset.t], i = +el.dataset.i;
+      const upd = () => {
+        (L.v[t.id] ??= [])[i] = el.value.trim();
+        const f = flagOf(t, el.value.trim());
+        el.className = "fl-" + f;
+        const fl = el.parentElement.querySelector(".flag"); if (fl) fl.textContent = f && f !== "N" ? f : "";
+        refreshCalcs();
+        changed(false);
+      };
+      el.oninput = upd; el.onchange = upd;
+    });
   });
   host.querySelectorAll("[data-m]").forEach(el => el.oninput = el.onchange = () => { (L.micro[el.dataset.m] ??= {})[el.dataset.f] = el.value; if (el.tagName === "SELECT") el.className = "fl-" + (el.value === "Positive" ? "A" : ""); changed(false); });
-  host.querySelectorAll("[data-s2]").forEach(el => el.oninput = el.onchange = () => { (L.studies[el.dataset.s2] ??= {})[el.dataset.f] = el.value; if (el.tagName === "SELECT") el.className = "fl-" + (el.value === "Abnormal" ? "A" : ""); changed(false); });
+  const giSync = id => {
+    const m = MICRO.find(x => x.id === id), x = (L.micro[id] ??= {}), tg = x.targets || {};
+    const det = m.targets.filter(t => tg[t] === "Detected");
+    if (det.length) { x.res = "Positive"; x.text = det.join(", "); }
+    else if (m.targets.every(t => tg[t] === "Not detected")) { x.res = "Negative / no growth"; x.text = `All ${m.targets.length} targets not detected`; }
+  };
+  host.querySelectorAll("[data-gi]").forEach(el => el.onchange = () => {
+    const m = MICRO.find(x => x.id === el.dataset.gi), x = (L.micro[m.id] ??= {});
+    (x.targets ??= {})[m.targets[+el.dataset.ti]] = el.value; giSync(m.id); renderLabs(); changed();
+  });
+  host.querySelectorAll("[data-gi-all]").forEach(b => b.onclick = () => {
+    const m = MICRO.find(x => x.id === b.dataset.giAll), x = (L.micro[m.id] ??= {});
+    x.targets ??= {}; m.targets.forEach(t => { if (x.targets[t] !== "Detected") x.targets[t] = "Not detected"; }); giSync(m.id); renderLabs(); changed();
+  });
   $("#labComment").oninput = e => { L.comment = e.target.value; save(); };
   $("#colAdd").onclick = () => { if (L.cols.length < 7) { L.cols.push(`Day ${L.cols.length + 1}`); renderLabs(); changed(); } };
   $("#colDel").onclick = () => {
@@ -937,7 +1064,7 @@ function renderLabs() {
     if (Object.values(L.v).some(a => has(a[last])) && !confirm(`Remove column “${L.cols[last]}” and its values?`)) return;
     L.cols.pop(); Object.values(L.v).forEach(a => { a.length = Math.min(a.length, L.cols.length); }); renderLabs(); changed();
   };
-  $("#labShowAll").onchange = e => { L.showAll = e.target.checked; renderLabs(); changed(false); };
+  $("#labShowAll").onchange = e => { L.showAll = e.target.checked; renderLabs(); renderImaging(); changed(false); };
   $("#btnRefs").onclick = openRefs;
   renderAnalysis();
 }
@@ -954,8 +1081,8 @@ function openRefs() {
     const o = refOverrides[`${t.id}|${i}`] || {};
     const band = `${b.min === 0 && b.max === 200 ? "All ages" : b.max === 200 ? `≥ ${b.min} y` : `${b.min}–<${b.max} y`}${b.sex ? " " + b.sex : ""}`;
     rows.push(`<tr${i === bandIndex(t) ? ' class="cur"' : ""}><td>${esc(p.title)}</td><td>${esc(t.name)}</td><td>${band}</td>
-      <td><input data-rk="${t.id}|${i}" data-rf="low" value="${esc(o.low ?? "")}" placeholder="${b.low}" /></td>
-      <td><input data-rk="${t.id}|${i}" data-rf="high" value="${esc(o.high ?? "")}" placeholder="${b.high}" /></td>
+      <td><input data-rk="${t.id}|${i}" data-rf="low" value="${esc(o.low ?? "")}" placeholder="${b.low ?? "—"}" /></td>
+      <td><input data-rk="${t.id}|${i}" data-rf="high" value="${esc(o.high ?? "")}" placeholder="${b.high ?? "—"}" /></td>
       <td><input data-rk="${t.id}|${i}" data-rf="unit" value="${esc(o.unit ?? "")}" placeholder="${esc(t.unit)}" /></td></tr>`);
   })));
   $("#refsBody").innerHTML = rows.join("");
@@ -964,31 +1091,30 @@ function openRefs() {
 function saveRefsFromDialog() {
   const next = {};
   document.querySelectorAll("#refsBody [data-rk]").forEach(el => { if (has(el.value)) (next[el.dataset.rk] ??= {})[el.dataset.rf] = el.value.trim(); });
-  refOverrides = next; saveRefs(); $("#refsDlg").close(); renderLabs(); changed();
+  refOverrides = next; saveRefs(); $("#refsDlg").close(); renderLabs(); renderImaging(); changed();
 }
 
 /* ---------- investigations in the printed report ---------- */
+function resultTable(panels, cols) {
+  return `<table class="r"><thead><tr><th>Test</th>${cols.map(x => `<th class="n">${esc(x.c)}</th>`).join("")}<th>Unit</th><th>Reference</th></tr></thead><tbody>` +
+    panels.map(p => `<tr class="cat"><td colspan="${cols.length + 3}">${esc(p.title)}</td></tr>` +
+      p.tests.filter(t => vals(t.id).some(has)).map(t => `<tr><td>${esc(t.name)}${t.calc ? ' <i class="r-calc">calc.</i>' : ""}</td>${cols.map(x => {
+        const v = vals(t.id)[x.i], f = flagOf(t, v);
+        return `<td class="n ${f && f !== "N" ? "rf-" + f : ""}">${has(v) ? esc(v) + (f && f !== "N" ? ` <b>${f}</b>` : "") : ""}</td>`;
+      }).join("")}<td>${esc(unitOf(t))}</td><td>${esc(refText(t))}${refFor(t)?.custom ? "*" : ""}</td></tr>`).join("")).join("") + `</tbody></table>`;
+}
 function reportInvestigations(cite) {
   const L = labsState();
-  const used = L.cols.map((_, i) => LAB_PANELS.some(p => p.tests.some(t => has(vals(t.id)[i]))));
-  const cols = L.cols.map((c, i) => ({ c, i })).filter(x => used[x.i]);
   let out = "";
-  const panels = LAB_PANELS.filter(panelHasValues);
+  const panels = LAB_PANELS.filter(p => p.group !== "imaging" && panelHasValues(p));
   if (panels.length) {
-    out += `<table class="r"><thead><tr><th>Test</th>${cols.map(x => `<th class="n">${esc(x.c)}</th>`).join("")}<th>Unit</th><th>Reference</th></tr></thead><tbody>` +
-      panels.map(p => `<tr class="cat"><td colspan="${cols.length + 3}">${esc(p.title)}</td></tr>` +
-        p.tests.filter(t => vals(t.id).some(has)).map(t => `<tr><td>${esc(t.name)}</td>${cols.map(x => {
-          const v = vals(t.id)[x.i], f = flagOf(t, v);
-          return `<td class="n ${f && f !== "N" ? "rf-" + f : ""}">${has(v) ? esc(v) + (f && f !== "N" ? ` <b>${f}</b>` : "") : ""}</td>`;
-        }).join("")}<td>${esc(unitOf(t))}</td><td>${esc(refText(t))}${refFor(t)?.custom ? "*" : ""}</td></tr>`).join("")).join("") +
-      `</tbody></table><div class="r-legend">Flags: L low · H high · LL/HH critical · A abnormal. Reference intervals for ${(() => { const a = ageAt(state.patient.dob, state.encounter.admit); return a !== null ? `age ${a}` : "adults"; })()}${state.patient.sex ? `, ${esc(state.patient.sex.toLowerCase())}` : ""}${cite(rangeRefs())}${Object.keys(refOverrides).length ? "; * = this hospital's laboratory interval" : ""}.</div>`;
+    const used = L.cols.map((_, i) => panels.some(p => p.tests.some(t => has(vals(t.id)[i]))));
+    const cols = L.cols.map((c, i) => ({ c, i })).filter(x => used[x.i]);
+    out += resultTable(panels, cols) + `<div class="r-legend">Flags: L low · H high · LL/HH critical · A abnormal. Reference intervals for ${ageLabel()}${cite(rangeRefs())}${Object.keys(refOverrides).length ? "; * = this hospital's laboratory interval" : ""}.</div>`;
   }
-  const micro = MICRO.filter(m => has((L.micro[m.id] || {}).res) || has((L.micro[m.id] || {}).text));
-  if (micro.length) out += `<table class="r" style="margin-top:6px"><thead><tr><th>Microbiology</th><th>Result</th><th>Organism / details</th></tr></thead><tbody>` +
-    micro.map(m => `<tr><td>${esc(m.name)}</td><td class="${L.micro[m.id].res === "Positive" ? "rf-A" : ""}">${esc(L.micro[m.id].res || "")}</td><td>${esc(L.micro[m.id].text || "")}</td></tr>`).join("") + `</tbody></table>`;
-  const st = STUDIES.filter(s => has((L.studies[s.id] || {}).res) || has((L.studies[s.id] || {}).text));
-  if (st.length) out += `<table class="r" style="margin-top:6px"><thead><tr><th>Imaging / cardiac study</th><th>Result</th><th>Findings / impression</th></tr></thead><tbody>` +
-    st.map(s => `<tr><td>${esc(s.name)}</td><td class="${L.studies[s.id].res === "Abnormal" ? "rf-A" : ""}">${esc(L.studies[s.id].res || "")}</td><td>${esc(L.studies[s.id].text || "")}</td></tr>`).join("") + `</tbody></table>`;
+  const micro = MICRO.filter(m => { const x = L.micro[m.id] || {}; return has(x.res) || has(x.text) || has(x.sens); });
+  if (micro.length) out += `<table class="r" style="margin-top:6px"><thead><tr><th>Microbiology</th><th>Result</th><th>Organism / details</th><th>Susceptibility</th></tr></thead><tbody>` +
+    micro.map(m => { const x = L.micro[m.id]; return `<tr><td>${esc(m.name)}${m.targets ? cite("biofire") : ""}</td><td class="${x.res === "Positive" ? "rf-A" : ""}">${esc(x.res || "")}</td><td>${esc(x.text || "")}</td><td>${esc(x.sens || "")}</td></tr>`; }).join("") + `</tbody></table>`;
   return out;
 }
 function reportAnalysis(cite) {
@@ -1010,6 +1136,15 @@ const REFS = {
   idsa: { short: "IDSA 2017", text: "Shane AL, Mody RK, Crump JA, et al. 2017 Infectious Diseases Society of America clinical practice guidelines for the diagnosis and management of infectious diarrhea. Clin Infect Dis. 2017;65(12):e45–e80. doi:10.1093/cid/cix669" },
   kardalas: { short: "Kardalas 2018", text: "Kardalas E, Paschou SA, Anagnostis P, Muscogiuri G, Siasos G, Vryonidou A. Hypokalemia: a clinical update. Endocr Connect. 2018;7(4):R135–R146. doi:10.1530/EC-18-0109" },
   kdigo: { short: "KDIGO 2012", text: "Kidney Disease: Improving Global Outcomes (KDIGO) Acute Kidney Injury Work Group. KDIGO clinical practice guideline for acute kidney injury. Kidney Int Suppl. 2012;2(1):1–138." },
+  inker: { short: "CKD-EPI 2021", text: "Inker LA, Eneanya ND, Coresh J, et al. New creatinine- and cystatin C–based equations to estimate GFR without race. N Engl J Med. 2021;385(19):1737–49. doi:10.1056/NEJMoa2102953" },
+  schwartz: { short: "Schwartz 2009", text: "Schwartz GJ, Muñoz A, Schneider MF, et al. New equations to estimate GFR in children with CKD. J Am Soc Nephrol. 2009;20(3):629–37. doi:10.1681/ASN.2008030287" },
+  payne: { short: "Payne 1973", text: "Payne RB, Little AJ, Williams RB, Milner JR. Interpretation of serum calcium in patients with abnormal serum proteins. Br Med J. 1973;4(5893):643–6. doi:10.1136/bmj.4.5893.643" },
+  rautaharju: { short: "AHA/ACCF/HRS 2009", text: "Rautaharju PM, Surawicz B, Gettes LS. AHA/ACCF/HRS recommendations for the standardization and interpretation of the electrocardiogram: part IV: the ST segment, T and U waves, and the QT interval. Circulation. 2009;119(10):e241–50. doi:10.1161/CIRCULATIONAHA.108.191096" },
+  rijnbeek: { short: "Rijnbeek 2001", text: "Rijnbeek PR, Witsenburg M, Schrama E, Hess J, Kors JA. New normal limits for the paediatric electrocardiogram. Eur Heart J. 2001;22(8):702–11. doi:10.1053/euhj.2000.2399" },
+  lang: { short: "ASE/EACVI 2015", text: "Lang RM, Badano LP, Mor-Avi V, et al. Recommendations for cardiac chamber quantification by echocardiography in adults: an update from the American Society of Echocardiography and the European Association of Cardiovascular Imaging. J Am Soc Echocardiogr. 2015;28(1):1–39.e14. doi:10.1016/j.echo.2014.10.003" },
+  lopez24: { short: "ASE paediatric TTE 2024", text: "Lopez L, Saurers DL, Barker PCA, et al. Guidelines for performing a comprehensive pediatric transthoracic echocardiogram: recommendations from the American Society of Echocardiography. J Am Soc Echocardiogr. 2024;37(2):119–70. doi:10.1016/j.echo.2023.11.015" },
+  acr: { short: "ACR Contrast Manual 2024", text: "ACR Committee on Drugs and Contrast Media. ACR Manual on Contrast Media. Reston, VA: American College of Radiology; 2024." },
+  biofire: { short: "BioFire GI Panel", text: "bioMérieux / BioFire Diagnostics. BIOFIRE® FILMARRAY® Gastrointestinal (GI) Panel — 22-target menu (manufacturer's product information)." },
   icd: { short: "ICD-10", text: "World Health Organization. ICD-10: International Statistical Classification of Diseases and Related Health Problems, 10th Revision. Geneva: WHO." },
   cpt: { short: "CPT/HCPCS", text: "American Medical Association. CPT® (Current Procedural Terminology), current edition; Centers for Medicare & Medicaid Services. HCPCS Level II code set; NUBC UB-04 revenue codes." }
 };
@@ -1020,12 +1155,27 @@ function findingRefs(f) {
   if (f.supports === "E86" || /dehydration|volume|rehydrat|acidosis/i.test(t)) r.push("who", ...(child ? ["espghan"] : []));
   if (f.supports === "A0" || /culture|PCR|aetiology|organism/i.test(t)) r.push("idsa", ...(child ? ["espghan"] : []));
   if (/creatinine|kidney/i.test(t)) r.push("kdigo");
-  if (child && /tachycardia|heart rate/i.test(t)) r.push("fleming");
+  if (child && /^Tachycardia:/.test(t)) r.push("fleming");
   if (child && /hypotension|systolic BP/i.test(t)) r.push("flynn");
+  if (/QTc/.test(t)) r.push("rautaharju", ...(child ? ["rijnbeek"] : []));
+  if (/ECG rhythm|repolarisation|PR interval|QRS/i.test(t)) r.push(child ? "rijnbeek" : "rautaharju");
+  if (/ejection fraction|fractional shortening|LV dilatation|TAPSE|echocardiograph/i.test(t)) r.push(child ? "lopez24" : "lang");
+  if (/eGFR/.test(t)) r.push(child ? "schwartz" : "inker");
+  if (/corrected calcium/i.test(t)) r.push("payne");
+  if (/GI pathogen panel/.test(t)) r.push("biofire");
+  if (/contrast/i.test(t)) r.push("acr");
   return [...new Set(r)];
+}
+function imagingRangeRefs(panels) {
+  const r = [], child = isChild();
+  if (panels.some(p => p.id === "ecg")) r.push("rautaharju", ...(child ? ["rijnbeek"] : []));
+  if (panels.some(p => p.id === "echo")) r.push(child ? "lopez24" : "lang");
+  return r;
 }
 function rangeRefs() {
   const r = ["tietz"];
+  if (series("cca").length) r.push("payne");
+  if (series("egfr").length) r.push(isChild() ? "schwartz" : "inker");
   if (isChild()) {
     r.unshift("hl", "caliper");
     if (["hr", "rr"].some(id => series(id).length)) r.push("fleming");
@@ -1171,6 +1321,187 @@ function reportSignBlock() {
   return `<div class="r-sign">${box("physician")}${box("director")}<div><div class="sig-space">${S.stamp ? `<img src="${S.stamp.img}" alt="stamp" class="stamp" />` : ""}</div>Official hospital stamp</div></div>`;
 }
 
+/* ---------- radiology, imaging & cardiac diagnostics: structured study reports ---------- */
+// Each structure marked "Normal" prints its standard normal description; only abnormal findings need typing.
+const IMG_STUDIES = [
+  { id: "ct", name: "CT abdomen & pelvis with IV contrast", codes: /\b7417[6-8]\b|\b7415[0-2]\b|\b7416[0-2]\b|\bCT\b.*abdomen/i, reporter: "Radiologist", contrast: true, dose: true,
+    technique: "Helical CT of the abdomen and pelvis in the portal-venous phase after IV low-osmolar iodinated contrast; axial images with coronal and sagittal reformats.",
+    rows: [["liver", "Liver", "Normal size and attenuation; no focal lesion."], ["gb", "Gallbladder & bile ducts", "Gallbladder normal, no calculi or wall thickening; bile ducts not dilated."],
+      ["panc", "Pancreas", "Normal size and enhancement; no peripancreatic fluid or stranding."], ["spleen", "Spleen", "Normal size; homogeneous enhancement."],
+      ["adr", "Adrenal glands", "Normal."], ["kid", "Kidneys & ureters", "Normal size with symmetric enhancement; no hydronephrosis or calculi."],
+      ["stom", "Stomach & small bowel", "No wall thickening, dilatation or obstruction."], ["colon", "Colon & rectum", "No wall thickening, pericolic fat stranding or obstruction."],
+      ["app", "Appendix", "Normal calibre (≤ 6 mm) without periappendiceal inflammation."], ["nodes", "Mesentery & lymph nodes", "No enlarged lymph nodes; mesentery unremarkable."],
+      ["perit", "Peritoneum", "No free fluid, collection or free air."], ["pelvis", "Bladder & pelvic organs", "Normal for age."],
+      ["vess", "Vessels", "Aorta and IVC of normal calibre; mesenteric vessels patent."], ["bases", "Lung bases", "Clear."], ["bones", "Bones & soft tissues", "No acute abnormality."]] },
+  { id: "cxr", name: "Chest radiograph, 2 views", codes: /\b7104[5-8]\b|\b7101[01]\b|\b7102[0-2]\b|chest radiograph|chest x-?ray/i, reporter: "Radiologist", ctr: true,
+    technique: "PA and lateral views.",
+    rows: [["lungs", "Lungs", "Clear; no consolidation, mass or pneumothorax."], ["pleura", "Pleura", "No effusion."], ["heart", "Heart size", "Normal (cardiothoracic ratio < 0.50 on PA view)."],
+      ["med", "Mediastinum & hila", "Normal contour; hila normal."], ["diaph", "Diaphragm & costophrenic angles", "Normal; angles sharp."],
+      ["bones", "Bones & soft tissues", "No acute abnormality."], ["lines", "Lines & devices", "None."]] },
+  { id: "us", name: "Ultrasound abdomen", codes: /\b7670[05]\b|ultrasound/i, reporter: "Radiologist",
+    technique: "Real-time grey-scale and colour Doppler ultrasound of the abdomen.",
+    rows: [["liver", "Liver", "Normal size and echotexture; no focal lesion."], ["gb", "Gallbladder & bile ducts", "No calculi or wall thickening; ducts not dilated."],
+      ["panc", "Pancreas", "Normal where visualised."], ["spleen", "Spleen", "Normal size and echotexture."], ["kid", "Kidneys", "Normal size and corticomedullary differentiation; no hydronephrosis."],
+      ["bowel", "Bowel", "No wall thickening; normal peristalsis."], ["app", "Appendix", "Not seen / normal; no right iliac fossa collection."],
+      ["nodes", "Mesenteric lymph nodes", "No enlarged nodes."], ["fluid", "Free fluid", "None."]] },
+  { id: "echo", name: "Transthoracic echocardiogram (complete, spectral & colour Doppler)", codes: /\b9330[6-8]\b|echocardi/i, reporter: "Cardiologist", panel: "echo",
+    technique: "Complete 2D transthoracic echocardiogram with M-mode, spectral and colour Doppler.", rows: [] },
+  { id: "ecg", name: "12-lead electrocardiogram", codes: /\b9300[0-5]\b|\b93010\b|electrocardiogram/i, reporter: "Interpreting physician", panel: "ecg",
+    technique: "Standard 12-lead ECG at 25 mm/s and 10 mm/mV; QTc by Bazett's formula.", rows: [] },
+  { id: "tele", name: "Cardiac telemetry monitoring", codes: /telemetry/i, reporter: "Attending physician", duration: true,
+    technique: "Continuous ECG rhythm surveillance.",
+    rows: [["rhythm", "Underlying rhythm", "Sinus rhythm throughout."], ["events", "Arrhythmic events", "None recorded."], ["alarms", "Alarms / interventions", "None required."]] }
+];
+const IMG_RESULTS = ["", "Normal", "Abnormal", "Not assessed"];
+const imgState = id => { state.imaging ??= {}; const x = (state.imaging[id] ??= {}); x.rows ??= {}; return x; };
+const billedText = () => allItems().map(it => `${it.code || ""} ${it.desc || ""}`).join(" | ");
+const studyHasData = (d, x = (state.imaging || {})[d.id]) => !!x && (["day", "indication", "technique", "impression", "reporter", "agent", "volume", "ctdi", "dlp", "ctr", "duration"].some(k => has(x[k])) || Object.values(x.rows || {}).some(r => has(r.res) || has(r.text)));
+const studyVisible = d => labsState().showAll || d.codes.test(billedText()) || studyHasData(d);
+const firstNum = id => numSeries(id)[0]?.n;
+const contrastPerKg = x => { const wt = firstNum("wt"); return wt && has(x.volume) ? (parseVal(x.volume) / wt) : null; };
+const CTR_REF = { low: 0, high: 0.5 };
+
+function renderImaging() {
+  const host = $("#imgStudiesHost"); if (!host) return;
+  const list = IMG_STUDIES.filter(studyVisible);
+  if (!list.length) { host.innerHTML = `<p class="hint">No imaging or cardiac studies are listed in the services. Tick “Show all tests” in the investigations to add one.</p>`; return; }
+  const dxText = dxList().map(d => `${d.desc} (${d.code})`).join("; ");
+  host.innerHTML = list.map(d => {
+    const x = imgState(d.id);
+    const sel = (f, opts, v) => `<select data-ix="${d.id}" data-f="${f}">${opts.map(o => `<option ${o === (v ?? "") ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
+    const inp = (f, ph = "", extra = "") => `<input data-ix="${d.id}" data-f="${f}" value="${esc(x[f])}" placeholder="${esc(ph)}" ${extra} />`;
+    const perKg = d.contrast ? contrastPerKg(x) : null;
+    const ctrF = d.ctr && has(x.ctr) ? (parseVal(x.ctr) >= CTR_REF.high ? "H" : "N") : "";
+    return `<div class="study">
+      <div class="study-head"><b>${esc(d.name)}</b><span class="spacer"></span>
+        <button class="small" data-allnormal="${d.id}" title="Mark every structure as normal (standard normal descriptions are printed)">✓ All normal</button>
+        <button class="small danger" data-clearstudy="${d.id}">Clear</button></div>
+      <div class="grid">
+        <div><label>Day / date${inp("day", "e.g. Day 1")}</label></div>
+        <div><label>${esc(d.reporter)}${inp("reporter", "Name")}</label></div>
+        <div class="wide"><label>Clinical indication${inp("indication", dxText ? `e.g. ${dxText}` : "")}</label></div>
+        <div class="wide"><label>Technique<input data-ix="${d.id}" data-f="technique" value="${esc(x.technique)}" placeholder="${esc(d.technique)}" /></label></div>
+        ${d.contrast ? `
+        <div><label>IV contrast agent${inp("agent", "Iohexol 350 mgI/mL (low-osmolar)")}</label></div>
+        <div><label>Volume (mL)${inp("volume", "", 'inputmode="decimal"')}<span class="hint" data-perkg="${d.id}">${perKg ? ` = ${perKg.toFixed(2)} mL/kg` : ""}</span></label></div>
+        <div><label>Contrast reaction${sel("reaction", ["", "None", "Mild", "Moderate", "Severe"], x.reaction)}</label></div>
+        <div><label>Oral contrast${sel("oral", ["", "None", "Water (neutral)", "Positive oral contrast"], x.oral)}</label></div>` : ""}
+        ${d.dose ? `
+        <div><label>CTDIvol (mGy)${inp("ctdi", "", 'inputmode="decimal"')}</label></div>
+        <div><label>DLP (mGy·cm)${inp("dlp", "", 'inputmode="decimal"')}</label></div>` : ""}
+        ${d.ctr ? `<div><label>Cardiothoracic ratio (normal &lt; 0.50)<div class="cell"><input data-ix="${d.id}" data-f="ctr" value="${esc(x.ctr)}" inputmode="decimal" class="fl-${ctrF}" /><span class="flag">${ctrF === "H" ? "H" : ""}</span></div></label></div>` : ""}
+        ${d.duration ? `<div><label>Monitoring duration (hours)${inp("duration", "", 'inputmode="decimal"')}</label></div>` : ""}
+      </div>
+      ${d.panel ? `<p class="hint" style="margin:8px 0 0">Measurements for this study are entered in the “${d.panel === "ecg" ? "ECG measurements" : "Echocardiographic measurements"}” table above, with their reference ranges.</p>` : ""}
+      ${d.rows.length ? `<div class="scroll"><table class="edit lab" style="margin-top:8px"><thead><tr><th>Structure</th><th style="width:140px">Result</th><th>Findings (standard normal description shown in grey)</th></tr></thead><tbody>
+        ${d.rows.map(([rid, label, normal]) => { const r = x.rows[rid] || {}; return `<tr><td class="tname">${esc(label)}</td>
+          <td><select data-ix="${d.id}" data-row="${rid}" data-f="res" class="fl-${r.res === "Abnormal" ? "A" : ""}">${IMG_RESULTS.map(o => `<option ${o === (r.res ?? "") ? "selected" : ""}>${o}</option>`).join("")}</select></td>
+          <td><input data-ix="${d.id}" data-row="${rid}" data-f="text" value="${esc(r.text)}" placeholder="${esc(normal)}" /></td></tr>`; }).join("")}
+      </tbody></table></div>` : ""}
+      <label style="margin-top:8px">Impression / conclusion<textarea data-ix="${d.id}" data-f="impression" style="min-height:44px">${esc(x.impression)}</textarea></label>
+    </div>`;
+  }).join("");
+
+  host.querySelectorAll("[data-ix]").forEach(el => {
+    const upd = () => {
+      const x = imgState(el.dataset.ix);
+      if (el.dataset.row) (x.rows[el.dataset.row] ??= {})[el.dataset.f] = el.value;
+      else x[el.dataset.f] = el.value;
+      if (el.tagName === "SELECT" && el.dataset.row) el.className = "fl-" + (el.value === "Abnormal" ? "A" : "");
+      if (el.dataset.f === "volume") { const k = contrastPerKg(x), sp = host.querySelector(`[data-perkg="${el.dataset.ix}"]`); if (sp) sp.textContent = k ? ` = ${k.toFixed(2)} mL/kg` : ""; }
+      if (el.dataset.f === "ctr") { const f = has(el.value) ? (parseVal(el.value) >= CTR_REF.high ? "H" : "N") : ""; el.className = "fl-" + f; el.parentElement.querySelector(".flag").textContent = f === "H" ? "H" : ""; }
+      changed(false);
+    };
+    el.oninput = upd; el.onchange = upd;
+  });
+  host.querySelectorAll("[data-allnormal]").forEach(b => b.onclick = () => {
+    const d = IMG_STUDIES.find(s => s.id === b.dataset.allnormal), x = imgState(d.id);
+    d.rows.forEach(([rid]) => { const r = (x.rows[rid] ??= {}); if (r.res !== "Abnormal") { r.res = "Normal"; r.text = ""; } });
+    if (d.contrast && !has(x.reaction)) x.reaction = "None";
+    if (!has(x.impression) && !Object.values(x.rows).some(r => r.res === "Abnormal")) x.impression = d.id === "tele" ? "No arrhythmia recorded during monitoring." : "No acute abnormality.";
+    renderImaging(); changed();
+  });
+  host.querySelectorAll("[data-clearstudy]").forEach(b => b.onclick = () => { if (confirm("Clear everything entered for this study?")) { state.imaging[b.dataset.clearstudy] = {}; renderImaging(); changed(); } });
+}
+
+/* imaging findings that feed the automatic analysis */
+function analyzeImaging(add, info) {
+  IMG_STUDIES.forEach(d => {
+    const x = (state.imaging || {})[d.id];
+    if (!x || !studyHasData(d)) return;
+    const abn = d.rows.filter(([rid]) => (x.rows[rid] || {}).res === "Abnormal");
+    abn.forEach(([rid, label]) => {
+      const t = (x.rows[rid] || {}).text || "abnormal";
+      const o = {};
+      if (d.id === "tele" || d.id === "echo") o.supports = "cardiac";
+      if (d.id === "ct" || d.id === "us") {
+        if (/stom|colon|bowel/.test(rid)) o.supports = "A0";
+        if (rid === "vess" && /ivc|vena cava/i.test(t) && /flat|collaps|small|slit/i.test(t)) o.supports = "E86";
+      }
+      add(`${d.name} — ${label}: ${t}.`, o);
+    });
+    if (d.ctr && has(x.ctr) && parseVal(x.ctr) >= CTR_REF.high) add(`Chest radiograph: cardiothoracic ratio ${x.ctr} (≥ 0.50) — cardiomegaly on PA view.`, { supports: "cardiac" });
+    const assessed = d.rows.filter(([rid]) => (x.rows[rid] || {}).res === "Normal");
+    if (!abn.length && assessed.length && !(d.ctr && parseVal(x.ctr) >= CTR_REF.high)) info(`${d.name}: no acute abnormality (all ${assessed.length} assessed item${assessed.length > 1 ? "s" : ""} within normal limits).`);
+    if (has(x.impression)) (abn.length ? add : info)(`${d.name} — impression: ${x.impression.trim().replace(/\.$/, "")}.`, abn.length && (d.id === "echo" || d.id === "ecg" || d.id === "tele") ? { supports: "cardiac" } : {});
+    if (d.contrast && /mild|moderate|severe/i.test(x.reaction || "")) add(`${x.reaction} reaction to IV contrast — document treatment and observation.`, {});
+  });
+}
+
+/* checks on the imaging section */
+function imagingChecks(add) {
+  IMG_STUDIES.filter(d => d.codes.test(billedText())).forEach(d => {
+    const x = (state.imaging || {})[d.id] || {};
+    const measured = d.panel && LAB_PANELS.some(p => p.id === d.panel && panelHasValues(p));
+    if (!has(x.impression) && !measured && !Object.values(x.rows || {}).some(r => has(r.res))) add("warn", `${d.name} was performed but no report/impression is entered (Radiology & imaging).`);
+  });
+  IMG_STUDIES.forEach(d => {
+    const x = (state.imaging || {})[d.id]; if (!x) return;
+    d.rows.forEach(([rid, label]) => { const r = x.rows?.[rid]; if (r?.res === "Abnormal" && !has(r.text)) add("warn", `${d.name}: “${label}” is marked abnormal but the finding is not described.`); });
+    if (d.contrast && studyHasData(d)) {
+      if (!has(x.agent) || !has(x.volume)) add("info", `${d.name}: document the contrast agent and volume given.`);
+      const perKg = contrastPerKg(x);
+      if (perKg) add("info", `IV contrast ${x.volume} mL = ${perKg.toFixed(2)} mL/kg at ${firstNum("wt")} kg — confirm against the agent's labelled paediatric/adult dose (ACR Manual on Contrast Media).`);
+      const g = numSeries("egfr")[0];
+      if (g && g.n < 30) add("warn", `eGFR ${g.n} mL/min/1.73 m² before contrast CT — below 30; document the risk assessment for contrast-associated kidney injury (ACR Manual on Contrast Media).`);
+    }
+  });
+}
+
+/* imaging in the printed report */
+function reportImaging(cite) {
+  const L = labsState();
+  let out = "";
+  const panels = LAB_PANELS.filter(p => p.group === "imaging" && panelHasValues(p));
+  if (panels.length) {
+    const used = L.cols.map((_, i) => panels.some(p => p.tests.some(t => has(vals(t.id)[i]))));
+    const cols = L.cols.map((c, i) => ({ c, i })).filter(x => used[x.i]);
+    out += resultTable(panels, cols) + `<div class="r-legend">Measured values with reference ranges for ${ageLabel()}${cite(imagingRangeRefs(panels))}.</div>`;
+  }
+  IMG_STUDIES.filter(d => studyHasData(d)).forEach(d => {
+    const x = state.imaging[d.id];
+    const perKg = d.contrast ? contrastPerKg(x) : null;
+    const tech = [x.technique || d.technique,
+      d.contrast && (has(x.agent) || has(x.volume)) ? `IV contrast: ${x.agent || "agent not stated"}${has(x.volume) ? `, ${x.volume} mL${perKg ? ` (${perKg.toFixed(2)} mL/kg)` : ""}` : ""}${has(x.reaction) ? `; reaction: ${x.reaction.toLowerCase()}` : ""}.` : "",
+      d.contrast && has(x.oral) ? `Oral contrast: ${x.oral.toLowerCase()}.` : "",
+      d.dose && (has(x.ctdi) || has(x.dlp)) ? `Radiation dose: ${has(x.ctdi) ? `CTDIvol ${x.ctdi} mGy` : ""}${has(x.ctdi) && has(x.dlp) ? ", " : ""}${has(x.dlp) ? `DLP ${x.dlp} mGy·cm` : ""}.` : "",
+      d.duration && has(x.duration) ? `Monitoring duration: ${x.duration} h.` : ""].filter(Boolean).join(" ");
+    const rows = d.rows.filter(([rid]) => has((x.rows[rid] || {}).res));
+    out += `<div class="r-study"><div class="r-study-h"><b>${esc(d.name)}</b>${has(x.day) ? ` · ${esc(x.day)}` : ""}${has(x.reporter) ? ` · ${esc(d.reporter)}: ${esc(x.reporter)}` : ""}${d.contrast && (has(x.agent) || has(x.volume)) ? cite("acr") : ""}</div>
+      ${has(x.indication) ? `<div class="r-text"><b>Clinical indication</b>${esc(x.indication)}</div>` : ""}
+      <div class="r-text"><b>Technique</b>${esc(tech)}</div>
+      ${d.ctr && has(x.ctr) ? `<div class="r-text"><b>Cardiothoracic ratio</b><span class="${parseVal(x.ctr) >= CTR_REF.high ? "rf-H" : ""}">${esc(x.ctr)}${parseVal(x.ctr) >= CTR_REF.high ? " <b>H</b>" : ""}</span> (normal &lt; 0.50)</div>` : ""}
+      ${rows.length ? `<table class="r"><thead><tr><th style="width:28%">Structure</th><th>Findings</th></tr></thead><tbody>${rows.map(([rid, label, normal]) => {
+        const r = x.rows[rid];
+        const txt = r.res === "Normal" ? (r.text || normal) : r.res === "Not assessed" ? (r.text || "Not assessed.") : (r.text || "Abnormal.");
+        return `<tr><td>${esc(label)}</td><td class="${r.res === "Abnormal" ? "rf-A" : ""}">${r.res === "Abnormal" ? "<b>Abnormal:</b> " : ""}${esc(txt)}</td></tr>`;
+      }).join("")}</tbody></table>` : ""}
+      ${has(x.impression) ? `<div class="r-text r-impr"><b>Impression</b>${esc(x.impression)}</div>` : ""}
+    </div>`;
+  });
+  return out;
+}
+
 /* ---------- pre-submission checks ---------- */
 function runChecks() {
   const out = [];
@@ -1179,7 +1510,7 @@ function runChecks() {
     ["patient.name", "Patient name"], ["patient.dob", "Patient date of birth"], ["patient.mrn", "Medical record no. (MRN)"],
     ["insurance.company", "Insurance company"], ["insurance.policyNo", "Policy no."], ["insurance.memberId", "Member / card ID"],
     ["encounter.admit", "Admission date"], ["encounter.discharge", "Discharge date"], ["encounter.attending", "Attending physician"],
-    ["provider.name", "Hospital name"], ["invoice.no", "Invoice no."]
+    ["provider.name", "Hospital name"]
   ];
   const missing = req.filter(([k]) => !String(getPath(state, k) ?? "").trim() || /^n\/?a$/i.test(String(getPath(state, k)).trim())).map(([, l]) => l);
   if (missing.length) add("error", `Missing required information: ${missing.join(", ")}.`);
@@ -1195,10 +1526,6 @@ function runChecks() {
   const los = losDays();
   if (los !== null) {
     if (los < 0) add("error", "Discharge date is before admission date.");
-    const room = allItems().filter(it => /^01[1-6]\d$|^020\d|^021\d/.test(it.rev || "") || /room|per diem|bed/i.test(it.desc || ""));
-    room.filter(it => /room|accommodation/i.test(it.desc || "")).forEach(it => {
-      if (num(it.qty) > Math.max(los, 1)) add("error", `Room charged for ${it.qty} days but length of stay is ${los} night(s).`);
-    });
   }
 
   const age = ageAt(state.patient.dob, state.encounter.admit);
@@ -1215,30 +1542,16 @@ function runChecks() {
   if (cardiac.length && cEv.length) add("info", `Cardiac monitoring/work-up supported by results: ${cEv.join("; ")}. Make sure this is stated in the medical-necessity text.`);
   else if (cardiac.length && !hasDx(/^I|^R00|^R07|^R55|^R94\.3/)) {
     const lyte = hasDx(/^E87/);
-    add("warn", `Cardiac work-up billed (${[...new Set(cardiac.map(c => c.code || c.desc.slice(0, 20)))].join(", ")}) without a cardiac diagnosis. ${lyte ? "Electrolyte disturbance (E87.x) is coded — state the ECG/rhythm findings that justified telemetry, echo and cardiac markers, or add the relevant code (e.g. R94.31 abnormal ECG, I49.9 arrhythmia)." : "Add a supporting diagnosis or a written justification."}`);
+    add("warn", `Cardiac work-up performed (${[...new Set(cardiac.map(c => c.code || c.desc.slice(0, 20)))].join(", ")}) without a cardiac diagnosis. ${lyte ? "Electrolyte disturbance (E87.x) is coded — state the ECG/rhythm findings that justified telemetry, echo and cardiac markers, or add the relevant code (e.g. R94.31 abnormal ECG, I49.9 arrhythmia)." : "Add a supporting diagnosis or a written justification."}`);
   }
-  if (hasCode(/^9928[1-5]$/) && hasCode(/^9922[1-3]$/)) add("info", "ED visit (9928x) and initial inpatient care (9922x) billed on the same day — some payers bundle these when the same physician group admits. Keep both notes available.");
-  if (findItems(/\b74177\b/).length && !findItems(/Q99(6[5-7])|contrast/i).length) add("info", "Contrast CT billed without a contrast-medium line.");
-
-  allItems().forEach(it => {
-    if (!it.desc) add("warn", `A line in “${it.section}” has no description.`);
-    if (num(it.qty) <= 0 || num(it.unit) <= 0) add("warn", `“${(it.desc || "line").slice(0, 50)}” has zero quantity or price.`);
-  });
-  const noCode = allItems().filter(it => !it.code && !/room|per diem/i.test(it.desc)).length;
-  if (noCode) add("info", `${noCode} line(s) have no CPT/HCPCS code (common for oral medicines) — some insurers require a drug code or NDC/barcode.`);
-  state.sections.forEach(s => { if (s.items.length && !String(s.justification || "").trim()) add("info", `Category “${s.title}” has no justification text.`); });
+  allItems().forEach(it => { if (!it.desc) add("warn", `A service in “${it.section}” has no description.`); });
+  imagingChecks(add);
 
   labChecks(add);
   const S = sigs();
   if (!S.physician) add("warn", "Report is not yet signed by the attending physician (Report options & sign-off).");
   else if (!sigValid(S.physician)) add("error", "The report was changed after the attending physician signed — the signature is no longer valid. Re-sign before submitting.");
   if (S.director && !sigValid(S.director)) add("error", "The report was changed after the medical director signed — re-sign before submitting.");
-  const t = totals();
-  const printed = num(state.invoice.printedTotal);
-  if (printed) {
-    if (Math.abs(printed - t.gross) > 0.009) add("error", `Calculated total ${money(t.gross)} does not match the invoice total ${money(printed)} (difference ${money(t.gross - printed)}).`);
-    else add("ok", `Calculated total matches the invoice total (${money(printed)} ${cur()}).`);
-  }
   ["complaint", "course", "necessity"].forEach(k => { if (!String(state.clinical[k] || "").trim()) add("warn", `Clinical summary: “${{ complaint: "Chief complaint", course: "Hospital course", necessity: "Medical necessity" }[k]}” is empty.`); });
   const brackets = Object.values(state.clinical).join(" ").match(/\[[^\]]*\]/g);
   if (brackets) add("warn", `${brackets.length} “[ ]” placeholder(s) in the clinical summary still need the physician's input.`);
@@ -1289,7 +1602,7 @@ function autoDraft() {
     if (s.justification) return;
     const hits = RATIONALE.filter(r => s.items.some(it => r.items.test(`${it.code} ${it.desc}`)))
       .map(r => r.text(dxRef(r.dx, true) || (prim ? prim.code : "the presenting condition")));
-    if (/room|board|nursing/i.test(s.title)) hits.unshift(`Inpatient accommodation for ${los ?? "[ ]"} day(s) at the coverage class specified, as required for IV therapy and monitoring.`);
+    if (/room|board|nursing/i.test(s.title)) hits.unshift(`Inpatient admission for ${los ?? "[ ]"} day(s) with continuous nursing care, as required for IV therapy and monitoring.`);
     if (hits.length) s.justification = [...new Set(hits)].join(" ");
   });
   renderAll();
@@ -1297,40 +1610,24 @@ function autoDraft() {
 
 /* ---------- report ---------- */
 function buildReport() {
-  const s = state, c = esc(cur());
-  const t = totals();
+  const s = state;
   const age = ageAt(s.patient.dob, s.encounter.admit);
   const los = losDays();
   const kv = (label, v) => `<div><span>${esc(label)}:</span> ${v ? esc(v) : '<span class="r-empty">—</span>'}</div>`;
   const text = (label, v) => v && v.trim() ? `<div class="r-text"><b>${esc(label)}</b>${esc(v)}</div>` : "";
 
-  let charges = "";
-  if (s.report.detail === "summary") {
-    charges = `<table class="r"><thead><tr><th>Category</th><th class="n">Lines</th><th class="n">Amount (${c})</th></tr></thead><tbody>` +
-      s.sections.map(x => `<tr><td>${esc(x.title)}${x.justification ? `<div style="color:#555;font-size:10px">${esc(x.justification)}</div>` : ""}</td><td class="n">${x.items.length}</td><td class="n">${money(secTotal(x))}</td></tr>`).join("") +
-      `</tbody></table>`;
-  } else {
-    charges = `<table class="r"><thead><tr><th>Rev.</th><th>CPT/HCPCS</th><th>Date(s)</th><th>Description</th><th class="n">Qty</th><th class="n">Unit (${c})</th><th class="n">Amount (${c})</th></tr></thead><tbody>` +
-      s.sections.map(x => `<tr class="cat"><td colspan="7">${esc(x.title)}</td></tr>` +
-        (x.justification ? `<tr><td colspan="7" style="color:#444;font-style:italic">Justification: ${esc(x.justification)}</td></tr>` : "") +
-        x.items.map(it => `<tr><td>${esc(it.rev)}</td><td>${esc(it.code)}</td><td>${esc(it.dates)}</td><td>${esc(it.desc)}</td><td class="n">${esc(it.qty)}</td><td class="n">${money(it.unit)}</td><td class="n">${money(lineAmt(it))}</td></tr>`).join("") +
-        `<tr class="sub"><td colspan="6" class="n">Subtotal — ${esc(x.title)}</td><td class="n">${money(secTotal(x))}</td></tr>`).join("") +
-      `</tbody></table>`;
-  }
-
-  const st = s.settlement;
-  const settleRows = [
-    ["Gross charges", t.gross],
-    num(st.discount) ? ["Less: discount / contractual adjustment", -num(st.discount)] : null,
-    num(st.nonCovered) ? ["Less: non-covered items", -num(st.nonCovered)] : null,
-    ["Patient responsibility (deductible, co-insurance, non-covered)", t.patientShare],
-    num(st.paidByPatient) ? ["Already paid by patient", num(st.paidByPatient)] : null
-  ].filter(Boolean);
+  const svcRows = x => x.items.map(it => `<tr><td>${esc(it.code)}</td><td>${esc(it.dates)}</td><td>${esc(it.desc)}</td><td class="n">${esc(it.qty)}</td></tr>`).join("");
+  const services = s.report.detail === "none" || !s.sections.length ? "" : s.report.detail === "summary"
+    ? `<table class="r"><thead><tr><th>Group</th><th>Clinical indication</th><th class="n">Services</th></tr></thead><tbody>` +
+      s.sections.map(x => `<tr><td>${esc(x.title)}</td><td>${esc(x.justification)}</td><td class="n">${x.items.length}</td></tr>`).join("") + `</tbody></table>`
+    : `<table class="r"><thead><tr><th>CPT/HCPCS</th><th>Date(s)</th><th>Service / procedure</th><th class="n">Times</th></tr></thead><tbody>` +
+      s.sections.map(x => `<tr class="cat"><td colspan="4">${esc(x.title)}</td></tr>` +
+        (x.justification ? `<tr><td colspan="4" style="color:#444;font-style:italic">Indication: ${esc(x.justification)}</td></tr>` : "") + svcRows(x)).join("") + `</tbody></table>`;
 
   const { cite, order } = citer();
   const dxCite = cite("icd"); // cite in reading order so numbers ascend through the report
-  const inv = reportInvestigations(cite), an = reportAnalysis(cite);
-  const chCite = s.sections.length ? cite("cpt") : "";
+  const inv = reportInvestigations(cite), img = reportImaging(cite), an = reportAnalysis(cite);
+  const chCite = services ? cite("cpt") : "";
   const extraRefs = String(s.report.references || "").split(/\n+/).map(x => x.trim()).filter(Boolean);
   const fp = contentHash();
   $("#report").innerHTML = `
@@ -1344,8 +1641,8 @@ function buildReport() {
         <div>${s.provider.phone ? "Tel " + esc(s.provider.phone) : ""}${s.provider.fax ? " · Fax " + esc(s.provider.fax) : ""}${s.provider.license ? " · Lic. " + esc(s.provider.license) : ""}</div>
       </div>
       <div class="r-title">
-        <b>MEDICAL REPORT &amp; INSURANCE CLAIM</b>
-        <div>Invoice ${esc(s.invoice.no)} · ${esc(fmtDate(s.invoice.date))}</div>
+        <b>MEDICAL REPORT</b>
+        ${s.invoice.no ? `<div>Hospital ref. ${esc(s.invoice.no)}</div>` : ""}
         ${s.insurance.claimNo ? `<div>Claim ${esc(s.insurance.claimNo)}</div>` : ""}
         <div>Report date: ${esc(fmtDate(s.report.date))}</div>
       </div>
@@ -1399,19 +1696,13 @@ function buildReport() {
       ${text("Follow-up", s.clinical.followUp)}
     </div>
 
-    ${inv ? `<div class="r-sec"><h3>Investigations — results vs. reference standards</h3>${inv}</div>` : ""}
+    ${inv ? `<div class="r-sec"><h3>Vital signs &amp; laboratory investigations — results vs. reference standards</h3>${inv}</div>` : ""}
+    ${img ? `<div class="r-sec"><h3>Radiology, imaging &amp; cardiac diagnostics</h3>${img}</div>` : ""}
     ${an ? `<div class="r-sec"><h3>Analysis &amp; interpretation</h3>${an}</div>` : ""}
 
     ${s.clinical.necessity ? `<div class="r-sec"><h3>Medical necessity</h3>${text("", s.clinical.necessity)}</div>` : ""}
 
-    <div class="r-sec"><h3>Itemized charges${chCite}</h3>${charges}</div>
-
-    <div class="r-sec"><h3>Claim summary</h3>
-      <table class="r" style="max-width:420px;margin-left:auto"><tbody>
-        ${settleRows.map(([l, v]) => `<tr><td>${esc(l)}</td><td class="n">${money(v)} ${c}</td></tr>`).join("")}
-        <tr class="cat"><td>AMOUNT CLAIMED FROM INSURER</td><td class="n">${money(t.claimed)} ${c}</td></tr>
-      </tbody></table>
-    </div>
+    ${services ? `<div class="r-sec"><h3>Services &amp; procedures performed${chCite}</h3>${services}</div>` : ""}
 
     ${order.length || extraRefs.length ? `<div class="r-sec"><h3>References</h3><ol class="r-refs">${order.map(k => `<li>${esc(REFS[k].text)}</li>`).join("")}${extraRefs.map(x => `<li>${esc(x)}</li>`).join("")}</ol></div>` : ""}
     ${s.report.remarks ? `<div class="r-sec"><h3>Remarks</h3><div class="r-text">${esc(s.report.remarks)}</div></div>` : ""}
@@ -1420,7 +1711,7 @@ function buildReport() {
       <p style="font-size:10.5px">I certify that the services listed above were medically necessary, were provided to the patient named, and that the clinical information in this report is accurate to the best of my knowledge.</p>
       ${reportSignBlock()}
     </div>
-    <div class="r-notice"><b>CONFIDENTIALITY NOTICE.</b> This report contains confidential medical information about the named patient. It is disclosed solely to the named insurer / TPA for assessing this claim and must not be used for any other purpose, copied or passed to any third party without the patient's (or guardian's) written consent, except where required by law. If you received it in error, notify ${esc(s.provider.name || "the issuing hospital")}${s.provider.phone ? ` (${esc(s.provider.phone)})` : ""} immediately and destroy all copies.</div>
+    <div class="r-notice"><b>CONFIDENTIALITY NOTICE.</b> This report contains confidential medical information about the named patient. It is disclosed solely to the named recipient (insurer / TPA) for the stated medical purpose and must not be used for any other purpose, copied or passed to any third party without the patient's (or guardian's) written consent, except where required by law. If you received it in error, notify ${esc(s.provider.name || "the issuing hospital")}${s.provider.phone ? ` (${esc(s.provider.phone)})` : ""} immediately and destroy all copies.</div>
     <div class="r-foot"><span>${esc(s.provider.name)} · Prepared by ${esc(s.report.preparedBy) || "—"}</span><span>Document fingerprint ${fp}</span></div>`;
 }
 
@@ -1437,11 +1728,11 @@ function importInvoice(txt, replace) {
     const line = raw.replace(/\t/g, "  ");
     const m = itemRe.exec(line);
     if (m) {
-      if (!curSec) { curSec = { title: "Charges", justification: "", items: [] }; sections.push(curSec); }
+      if (!curSec) { curSec = { title: "Services", justification: "", items: [] }; sections.push(curSec); }
       let rest = m[3].trim(), dates = "";
       const dm = dateRe.exec(rest);
       if (dm) { dates = dm[1].trim(); rest = dm[2].trim(); }
-      lastItem = { rev: m[1], code: /^[—-]$/.test(m[2]) ? "" : m[2].replace(/\s+/g, " "), dates, desc: rest, qty: m[4], unit: String(num(m[5])) };
+      lastItem = { rev: m[1], code: /^[—-]$/.test(m[2]) ? "" : m[2].replace(/\s+/g, " "), dates, desc: rest, qty: m[4] }; // prices deliberately not imported
       curSec.items.push(lastItem);
       continue;
     }
@@ -1476,8 +1767,9 @@ function importInvoice(txt, replace) {
   const dos = /Date of Service:\s*([0-9]{1,2}\s+\w{3,9}\s+\d{4})\s*[–-]\s*([0-9]{1,2}\s+\w{3,9}\s+\d{4})/i.exec(txt);
   if (dos) { state.encounter.admit = toISO(dos[1]); state.encounter.discharge = toISO(dos[2]); }
   const ptype = grab(/Patient Type:\s*(.+?)(?:\s{2,}|$)/m); if (ptype) state.encounter.type = ptype;
-  const total = grab(/TOTAL[^\d\n]*([\d,]+\.\d\d)/); if (total) state.invoice.printedTotal = String(num(total));
-  const curm = grab(/\b(EGP|USD|EUR|SAR|AED|GBP)\b/); if (curm) state.invoice.currency = curm;
+  // default result columns follow the length of stay (Day 1 … Day n)
+  const losN = losDays();
+  if (losN && losN > 0 && !Object.values(labsState().v).some(a => a.some(has))) labsState().cols = Array.from({ length: Math.min(losN, 7) }, (_, i) => `Day ${i + 1}`);
 
   if (replace) { state.sections = filled; if (dx.length) state.diagnoses = dx; }
   else { state.sections.push(...filled); state.diagnoses.push(...dx); }
@@ -1485,11 +1777,10 @@ function importInvoice(txt, replace) {
 }
 
 /* ---------- UI wiring ---------- */
-function renderAll() { bindFields(); renderDx(); renderSections(); renderLabs(); changed(); }
+function renderAll() { bindFields(); renderDx(); renderSections(); renderLabs(); renderImaging(); changed(); }
 let tmr;
 function changed(full = true) {
   save();
-  renderTotals();
   renderAnalysis();
   renderSignStatus();
   clearTimeout(tmr);
@@ -1539,10 +1830,10 @@ $("#btnImport").onclick = () => $("#importDlg").showModal();
 $("#importGo").onclick = () => {
   const r = importInvoice($("#importText").value, $("#importReplace").checked);
   $("#importDlg").close(); renderAll(); showTab("edit");
-  alert(`Imported ${r.items} line item(s) in ${r.sections} categor${r.sections === 1 ? "y" : "ies"} and ${r.dx} diagnosis code(s).\nPlease review the data and the pre-submission checks.`);
+  alert(`Imported ${r.items} service(s) in ${r.sections} group(s) and ${r.dx} diagnosis code(s) — prices were not imported.\nPlease review the data and the pre-submission checks.`);
 };
 $("#addDx").onclick = () => { state.diagnoses.push({ rank: state.diagnoses.length ? "Secondary" : "Primary", code: "", desc: "", onset: "On admission" }); renderDx(); changed(); };
-$("#addSection").onclick = () => { state.sections.push({ title: "", justification: "", items: [{ rev: "", code: "", dates: "", desc: "", qty: 1, unit: "" }] }); renderSections(); changed(); };
+$("#addSection").onclick = () => { state.sections.push({ title: "", justification: "", items: [{ rev: "", code: "", dates: "", desc: "", qty: 1 }] }); renderSections(); changed(); };
 $("#btnDraft").onclick = autoDraft;
 $("#refsSave").onclick = saveRefsFromDialog;
 $("#refsReset").onclick = () => { if (confirm("Discard all hospital-defined ranges and use the built-in standards?")) { document.querySelectorAll("#refsBody [data-rk]").forEach(el => (el.value = "")); saveRefsFromDialog(); } };
