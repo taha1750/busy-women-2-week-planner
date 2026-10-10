@@ -250,7 +250,11 @@
     </div>
 
     <div class="card">
-      <h2><span class="grow">Diagnoses (ICD-10)</span><button class="small" id="addDx">+ Add diagnosis</button></h2>
+      <h2><span class="grow">Diagnoses</span>
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;text-transform:none;letter-spacing:0">Coding system
+          <select data-k="report.coding" style="width:auto;margin:0"><option value="cm">ICD-10-CM</option><option value="who">WHO ICD-10</option></select></label>
+        <button class="small" id="addDx">+ Add diagnosis</button></h2>
+      <p class="hint">Type a code or start typing the diagnosis name — pick from the list and the other field fills in. Suggested codes from the analysis follow the selected coding system.</p>
       <div class="scroll"><table class="edit" id="dxTable">
         <thead><tr><th style="width:120px">Rank</th><th style="width:110px">ICD-10</th><th>Description</th><th style="width:150px">Onset</th><th></th></tr></thead>
         <tbody></tbody>
@@ -390,7 +394,7 @@ function blankCase() {
     sections: [],
     labs: { cols: ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5"], v: {}, micro: {}, studies: {}, showAll: false, comment: "" },
     imaging: {},
-    report: { date: new Date().toISOString().slice(0, 10), preparedBy: "", detail: "full", remarks: "", references: "", watermark: "yes", maskId: "yes" },
+    report: { date: new Date().toISOString().slice(0, 10), preparedBy: "", detail: "full", remarks: "", references: "", watermark: "yes", maskId: "yes", coding: "cm" },
     signatures: { physician: null, director: null, stamp: null }
   };
 }
@@ -453,25 +457,36 @@ function merge(base, data) {
 function bindFields() {
   document.querySelectorAll("[data-k]").forEach(el => {
     el.value = getPath(state, el.dataset.k) ?? "";
-    el.oninput = () => { setPath(state, el.dataset.k, el.value); if (/^patient\.(dob|sex)$|^encounter\.admit$/.test(el.dataset.k)) renderLabs(); changed(false); };
+    el.oninput = () => {
+      setPath(state, el.dataset.k, el.value);
+      if (/^patient\.(dob|sex)$|^encounter\.admit$/.test(el.dataset.k)) { renderLabs(); renderImaging(); }
+      if (el.dataset.k === "report.coding") { renderDx(); changed(); return; }
+      changed(false);
+    };
   });
 }
 
 /* ---------- diagnoses ---------- */
 function renderDx() {
+  ensureIcdLists();
   const tb = $("#dxTable tbody");
   tb.innerHTML = "";
   state.diagnoses.forEach((d, i) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><select data-f="rank"><option>Primary</option><option>Secondary</option><option>Complication</option><option>Comorbidity</option></select></td>
-      <td><input data-f="code" placeholder="A05.9" /></td>
-      <td><input data-f="desc" /></td>
+      <td><input data-f="code" placeholder="A05.9" list="icdCodes" autocomplete="off" /></td>
+      <td><input data-f="desc" list="icdTitles" autocomplete="off" placeholder="Start typing a diagnosis…" /></td>
       <td><input data-f="onset" list="onsets" /></td>
       <td><button class="small danger" title="Remove">✕</button></td>`;
     tr.querySelectorAll("[data-f]").forEach(el => {
       el.value = d[el.dataset.f] ?? "";
-      el.oninput = () => { d[el.dataset.f] = el.dataset.f === "code" ? el.value.toUpperCase() : el.value; changed(false); };
+      el.oninput = () => {
+        d[el.dataset.f] = el.dataset.f === "code" ? el.value.toUpperCase() : el.value;
+        if (el.dataset.f === "code") { const e = icdLookup(el.value); if (e && !has(d.desc)) { d.desc = codingCM() ? e.cmTitle : e.whoTitle; tr.querySelector('[data-f="desc"]').value = d.desc; } }
+        if (el.dataset.f === "desc") { const e = icdByTitle(el.value); if (e) { d.code = codingCM() ? e.cm : e.who; tr.querySelector('[data-f="code"]').value = d.code; } }
+        changed(false);
+      };
     });
     tr.querySelector("button").onclick = () => { state.diagnoses.splice(i, 1); renderDx(); changed(); };
     tb.appendChild(tr);
@@ -927,6 +942,8 @@ function analyze() {
   });
   // Radiology, imaging & telemetry reports
   analyzeImaging(add, info);
+  // Guideline-based diagnosis rules (knowledge base)
+  evalRules().forEach(f => F.push(f));
   return F;
 }
 
@@ -940,7 +957,7 @@ function labChecks(add) {
     if (f === "LL" || f === "HH") add("warn", `Critical value: ${t.name} ${x.raw} ${unitOf(t)} (${x.col}). Document notification and the action taken.`);
   })));
   // results that support a code that is not on the claim
-  F.filter((f, i, all) => f.code && !coded(f.code) && all.findIndex(g => g.code === f.code) === i).forEach(f => add("info", `Results support ${f.code} ${f.codeName}${f.specific ? " — more specific than the current primary code; consider updating the diagnosis" : " — consider adding it to the diagnoses"}.`));
+  F.filter((f, i, all) => f.code && f.suggest !== false && !coded(f.code) && all.findIndex(g => g.code === f.code) === i).forEach(f => add("info", `Results support ${f.code} ${f.codeName}${f.specific ? " — more specific than the current primary code; consider updating the diagnosis" : " — consider adding it to the diagnoses"}.`));
   // coded diagnoses that the entered results do not support
   const contra = [["E87.6", "k", "low", "potassium below reference"], ["E87.5", "k", "high", "potassium above reference"], ["E87.1", "na", "low", "sodium below reference"], ["E87.0", "na", "high", "sodium above reference"], ["E87.2", "hco3", "low", "low bicarbonate"]];
   contra.forEach(([code, id, dir, what]) => {
@@ -1150,7 +1167,7 @@ const REFS = {
 };
 const isChild = () => { const a = ageAt(state.patient.dob, state.encounter.admit); return a !== null && a < 18; };
 function findingRefs(f) {
-  const r = [], t = f.text, child = isChild();
+  const r = [...(f.refs || [])], t = f.text, child = isChild();
   if (/potassium|kalaemia/i.test(t)) r.push("kardalas");
   if (f.supports === "E86" || /dehydration|volume|rehydrat|acidosis/i.test(t)) r.push("who", ...(child ? ["espghan"] : []));
   if (f.supports === "A0" || /culture|PCR|aetiology|organism/i.test(t)) r.push("idsa", ...(child ? ["espghan"] : []));
@@ -1164,7 +1181,7 @@ function findingRefs(f) {
   if (/corrected calcium/i.test(t)) r.push("payne");
   if (/GI pathogen panel/.test(t)) r.push("biofire");
   if (/contrast/i.test(t)) r.push("acr");
-  return [...new Set(r)];
+  return [...new Set(r)].filter(k => REFS[k]);
 }
 function imagingRangeRefs(panels) {
   const r = [], child = isChild();
@@ -1500,6 +1517,123 @@ function reportImaging(cite) {
     </div>`;
   });
   return out;
+}
+
+/* ---------- guideline rule engine: evaluates the referenced diagnosis rules in DX_RULES ---------- */
+const codingCM = () => (state.report.coding || "cm") !== "who";
+function ruleValues(test) {
+  if (test === "age") { const a = ageAt(state.patient.dob, state.encounter.admit); return a === null ? [] : [{ n: a, raw: String(a) }]; }
+  if (test === "sex") return state.patient.sex ? [{ raw: state.patient.sex.charAt(0).toUpperCase(), n: NaN }] : [];
+  if (test === "los") { const l = losDays(); return l === null ? [] : [{ n: l, raw: String(l) }]; }
+  if (test.startsWith("micro:")) { const x = labsState().micro[test.slice(6)]; return x && has(x.res) ? [{ raw: x.res, n: NaN }] : []; }
+  if (test.startsWith("gi:")) {
+    const want = test.slice(3).toLowerCase(), tg = labsState().micro.gipcr?.targets || {};
+    return Object.keys(tg).filter(t => t.toLowerCase().includes(want) && has(tg[t])).map(t => ({ raw: tg[t], n: NaN }));
+  }
+  return TESTS[test] ? series(test) : [];
+}
+function evalItem(it) {
+  const t = TESTS[it.test], xs = ruleValues(it.test);
+  if (!xs.length) return false;
+  const v = it.value, agg = it.agg || "any";
+  const nums = xs.map(x => x.n).filter(n => !isNaN(n));
+  switch (it.op) {
+    case "present": return true;
+    case "eq": {
+      const raws = xs.map(x => String(x.raw).toLowerCase());
+      const sel = agg === "first" ? raws.slice(0, 1) : agg === "last" ? raws.slice(-1) : raws;
+      return sel.includes(String(v).toLowerCase());
+    }
+    case "abnormal": return !!t && xs.some(x => { const f = flagOf(t, x.raw); return f && f !== "N"; });
+    case "rise>=": return nums.length >= 2 && Math.min(...nums) > 0 && Math.max(...nums) / Math.min(...nums) >= +v;
+    case "riseabs>=": return nums.length >= 2 && Math.max(...nums) - Math.min(...nums) >= +v;
+  }
+  if (!nums.length) return false;
+  const sel = agg === "min" ? [Math.min(...nums)] : agg === "max" ? [Math.max(...nums)] : agg === "first" ? [nums[0]] : agg === "last" ? [nums[nums.length - 1]] : nums;
+  const ref = t && t.r && t.r.length ? refFor(t) : null;
+  return sel.some(n => {
+    switch (it.op) {
+      case "<": return n < +v; case "<=": return n <= +v; case ">": return n > +v; case ">=": return n >= +v;
+      case "low": return !!ref && ref.low != null && n < ref.low;
+      case "high": return !!ref && ref.high != null && n > ref.high;
+      case "xuln>=": return !!ref && ref.high != null && ref.high > 0 && n >= +v * ref.high;
+      case "xlln<=": return !!ref && ref.low != null && n <= +v * ref.low;
+    }
+    return false;
+  });
+}
+function evalCond(c) {
+  if (!c) return false;
+  const parts = [...(c.items || []).map(evalItem), ...(c.groups || []).map(g => {
+    const r = (g.items || []).map(evalItem);
+    return r.length ? (g.logic === "any" ? r.some(Boolean) : r.every(Boolean)) : false;
+  })];
+  if (!parts.length) return false;
+  return c.logic === "any" ? parts.some(Boolean) : parts.every(Boolean);
+}
+const condEmpty = c => !c || (!(c.items || []).length && !(c.groups || []).length);
+function fillTokens(s, extra = {}) {
+  return String(s || "").replace(/\{([a-z0-9_]+):(min|max|first|last|unit|ref)\}/gi, (m, id, k) => {
+    const t = TESTS[id]; if (!t) return m;
+    if (k === "unit") return unitOf(t);
+    if (k === "ref") return refText(t);
+    const ns = numSeries(id).map(x => x.n);
+    if (!ns.length) return "—";
+    const v = k === "min" ? Math.min(...ns) : k === "max" ? Math.max(...ns) : k === "first" ? ns[0] : ns[ns.length - 1];
+    return fmtN(+v.toFixed(4), t);
+  }).replace(/\{grade\}/g, extra.grade || "").replace(/\{score\}/g, extra.score ?? "");
+}
+function evalRules() {
+  const out = [];
+  (typeof DX_RULES === "undefined" ? [] : DX_RULES).forEach(rule => {
+    const scored = rule.scoring && (rule.scoring.items || []).length;
+    if (!(scored && condEmpty(rule.condition) ? true : evalCond(rule.condition))) return;
+    if (!condEmpty(rule.excludeIf) && evalCond(rule.excludeIf)) return;
+    let score = null;
+    if (scored) {
+      score = rule.scoring.items.reduce((sum, x) => sum + (evalCond(x.condition) ? +x.points : 0), 0);
+      if (rule.scoring.threshold != null && score < rule.scoring.threshold) return;
+    }
+    const grade = (rule.grades || []).find(g => evalCond(g.condition))?.label || "";
+    const cm = codingCM();
+    out.push({
+      text: `${rule.title}${grade ? ` — ${grade}` : ""}${score != null ? ` (score ${score})` : ""}: ${fillTokens(rule.interpretation, { grade, score })}`.replace(/\s+/g, " ").trim(),
+      lvl: rule.level || "abn",
+      code: (cm ? rule.icd10cm : rule.icd10who) || undefined,
+      codeName: (cm ? rule.icd10cmTitle : rule.icd10whoTitle) || undefined,
+      supports: rule.supports || undefined,
+      refs: rule.refKeys || [],
+      suggest: rule.suggestCode !== false,
+      ruleId: rule.id
+    });
+  });
+  return out;
+}
+
+/* ---------- diagnosis picker (ICD-10-CM / WHO library) ---------- */
+function icdOptions() {
+  const cm = codingCM();
+  return (typeof ICD_LIB === "undefined" ? [] : ICD_LIB).map(e => `<option value="${esc(cm ? e.cm : e.who)}">${esc(cm ? e.cmTitle : e.whoTitle)}</option>`).join("");
+}
+function icdTitleOptions() {
+  const cm = codingCM();
+  return (typeof ICD_LIB === "undefined" ? [] : ICD_LIB).map(e => `<option value="${esc(cm ? e.cmTitle : e.whoTitle)}">${esc((cm ? e.cm : e.who) + " · " + e.keywords)}</option>`).join("");
+}
+function icdLookup(code) {
+  const c = String(code || "").toUpperCase().trim(), cm = codingCM();
+  return (typeof ICD_LIB === "undefined" ? [] : ICD_LIB).find(e => (cm ? e.cm : e.who).toUpperCase() === c);
+}
+function icdByTitle(title) {
+  const t = String(title || "").toLowerCase().trim(), cm = codingCM();
+  return (typeof ICD_LIB === "undefined" ? [] : ICD_LIB).find(e => (cm ? e.cmTitle : e.whoTitle).toLowerCase() === t);
+}
+function ensureIcdLists() {
+  const mode = codingCM() ? "cm" : "who";
+  let dl = $("#icdCodes");
+  if (dl && dl.dataset.mode === mode) return;
+  if (dl) dl.remove();
+  const t = $("#icdTitles"); if (t) t.remove();
+  document.body.insertAdjacentHTML("beforeend", `<datalist id="icdCodes" data-mode="${mode}">${icdOptions()}</datalist><datalist id="icdTitles">${icdTitleOptions()}</datalist>`);
 }
 
 /* ---------- pre-submission checks ---------- */
