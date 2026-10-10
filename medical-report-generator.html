@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Medical Report Generator</title>
+<style>
+  :root {
+    --ink: #17202a;
+    --muted: #5d6b7a;
+    --line: #d5dde5;
+    --bg: #f3f6f9;
+    --card: #ffffff;
+    --accent: #0b6e8a;
+    --accent-ink: #ffffff;
+    --soft: #e8f3f6;
+    --warn: #9a5b00;
+    --warn-bg: #fff4e0;
+    --err: #a31d1d;
+    --err-bg: #fdecec;
+    --ok: #1d6b3a;
+    --ok-bg: #e7f6ec;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink); background: var(--bg); }
+  header.app { position: sticky; top: 0; z-index: 10; background: var(--accent); color: var(--accent-ink); padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  header.app h1 { font-size: 17px; margin: 0 12px 0 0; }
+  header.app .spacer { flex: 1; }
+  button, .btn { font: inherit; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  header.app button { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.35); }
+  header.app button.on { background: #fff; color: var(--accent); font-weight: 600; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.danger { color: var(--err); }
+  button.small { padding: 2px 8px; font-size: 12px; }
+  main { max-width: 1180px; margin: 0 auto; padding: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .card h2 { font-size: 15px; margin: 0 0 12px; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; display: flex; align-items: center; gap: 8px; }
+  .card h2 .grow { flex: 1; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px 14px; }
+  label { display: block; font-size: 12px; color: var(--muted); font-weight: 600; }
+  input, select, textarea { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); margin-top: 3px; }
+  textarea { min-height: 64px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .wide { grid-column: 1 / -1; }
+  table.edit { width: 100%; border-collapse: collapse; }
+  table.edit th { text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; padding: 4px; border-bottom: 1px solid var(--line); }
+  table.edit td { padding: 3px; vertical-align: top; }
+  table.edit input { margin: 0; padding: 4px 6px; }
+  table.edit td.num { text-align: right; white-space: nowrap; padding-top: 8px; font-variant-numeric: tabular-nums; }
+  .scroll { overflow-x: auto; }
+  .section-box { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 12px; background: #fbfcfd; }
+  .section-head { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .section-head input { font-weight: 600; }
+  .subtotal { text-align: right; font-weight: 600; margin-top: 6px; }
+  .hint { color: var(--muted); font-size: 12px; margin: 4px 0 10px; }
+  .checks li { margin: 4px 0; padding: 6px 10px; border-radius: 6px; list-style: none; }
+  .checks ul { padding: 0; margin: 0; }
+  .checks .error { background: var(--err-bg); color: var(--err); }
+  .checks .warn { background: var(--warn-bg); color: var(--warn); }
+  .checks .info { background: var(--soft); color: var(--accent); }
+  .checks .ok { background: var(--ok-bg); color: var(--ok); }
+  .totals { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; max-width: 420px; margin-left: auto; font-variant-numeric: tabular-nums; }
+  .totals .t { text-align: right; }
+  .totals .big { font-weight: 700; font-size: 16px; border-top: 2px solid var(--ink); padding-top: 4px; }
+  dialog { border: 1px solid var(--line); border-radius: 10px; width: min(900px, 94vw); }
+  dialog textarea { min-height: 300px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+  .hidden { display: none !important; }
+
+  /* ---------- Report (preview & print) ---------- */
+  #report { background: #fff; max-width: 210mm; margin: 0 auto; padding: 14mm 14mm 12mm; border: 1px solid var(--line); box-shadow: 0 2px 12px rgba(0,0,0,.06); color: #111; font-size: 11.5px; }
+  .r-head { display: flex; justify-content: space-between; gap: 16px; border-bottom: 3px solid var(--accent); padding-bottom: 8px; }
+  .r-head h1 { margin: 0; font-size: 19px; color: var(--accent); }
+  .r-head .r-title { text-align: right; }
+  .r-head .r-title b { font-size: 15px; display: block; }
+  .r-sec { margin-top: 12px; break-inside: avoid; }
+  .r-sec h3 { font-size: 11.5px; margin: 0 0 4px; padding: 3px 6px; background: var(--soft); color: var(--accent); text-transform: uppercase; letter-spacing: .05em; }
+  .r-kv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 14px; }
+  .r-kv div span { color: #555; }
+  table.r { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  table.r th { background: #f0f3f6; text-align: left; padding: 3px 4px; border-bottom: 1px solid #bbb; }
+  table.r td { padding: 3px 4px; border-bottom: 1px solid #e3e3e3; vertical-align: top; }
+  table.r .n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  table.r tr.sub td { font-weight: 600; background: #fafafa; }
+  table.r tr.cat td { font-weight: 700; background: #eef5f7; color: var(--accent); }
+  .r-text { white-space: pre-wrap; margin: 2px 0 6px; }
+  .r-text b { display: block; font-size: 10.5px; color: #444; }
+  .r-sign { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-top: 22px; }
+  .r-sign div { border-top: 1px solid #333; padding-top: 4px; font-size: 10.5px; min-height: 60px; }
+  .r-foot { margin-top: 14px; font-size: 9.5px; color: #666; border-top: 1px solid #ccc; padding-top: 4px; display: flex; justify-content: space-between; }
+  .r-empty { color: #999; font-style: italic; }
+
+  @media (max-width: 640px) {
+    .r-kv { grid-template-columns: 1fr; }
+    #report { padding: 16px; }
+  }
+  @media print {
+    @page { size: A4; margin: 10mm; }
+    body { background: #fff; }
+    header.app, #editor, #checksCard, .no-print { display: none !important; }
+    main { padding: 0; max-width: none; }
+    #preview { display: block !important; }
+    #report { border: 0; box-shadow: none; padding: 0; max-width: none; }
+    .r-sec h3, table.r th, table.r tr.cat td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+<header class="app">
+  <h1>🏥 Medical Report Generator</h1>
+  <button id="tabEdit" class="on">1 · Enter data</button>
+  <button id="tabPreview">2 · Report preview</button>
+  <span class="spacer"></span>
+  <button id="btnNew" title="Start a blank case">New</button>
+  <button id="btnOpen" title="Open a saved case file (.json)">Open case</button>
+  <button id="btnSave" title="Download this case as a .json file">Save case</button>
+  <button id="btnImport" title="Paste invoice text to auto-fill line items">Import invoice text</button>
+  <button id="btnPrint" title="Print or save the report as PDF">Print / PDF</button>
+  <input type="file" id="fileInput" accept=".json,application/json" class="hidden" />
+</header>
+
+<main>
+  <!-- ================= EDITOR ================= -->
+  <div id="editor">
+    <div class="card" id="checksCard">
+      <h2><span class="grow">Pre-submission checks</span></h2>
+      <div class="checks"><ul id="checks"></ul></div>
+    </div>
+
+    <div class="card">
+      <h2>Hospital / Provider</h2>
+      <div class="grid">
+        <div><label>Hospital name<input data-k="provider.name" /></label></div>
+        <div><label>Department / unit<input data-k="provider.department" /></label></div>
+        <div><label>Address<input data-k="provider.address" /></label></div>
+        <div><label>Phone<input data-k="provider.phone" /></label></div>
+        <div><label>Fax<input data-k="provider.fax" /></label></div>
+        <div><label>Facility licence / provider ID<input data-k="provider.license" /></label></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Patient</h2>
+      <div class="grid">
+        <div><label>Full name<input data-k="patient.name" /></label></div>
+        <div><label>Date of birth<input type="date" data-k="patient.dob" /></label></div>
+        <div><label>Sex<select data-k="patient.sex"><option value=""></option><option>Female</option><option>Male</option></select></label></div>
+        <div><label>Medical record no. (MRN)<input data-k="patient.mrn" /></label></div>
+        <div><label>National ID / passport<input data-k="patient.nationalId" /></label></div>
+        <div><label>Phone<input data-k="patient.phone" /></label></div>
+        <div><label>Guardian (if minor)<input data-k="patient.guardian" /></label></div>
+        <div><label>Address<input data-k="patient.address" /></label></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Insurance</h2>
+      <div class="grid">
+        <div><label>Insurance company<input data-k="insurance.company" /></label></div>
+        <div><label>TPA (if any)<input data-k="insurance.tpa" /></label></div>
+        <div><label>Policy no.<input data-k="insurance.policyNo" /></label></div>
+        <div><label>Member / card ID<input data-k="insurance.memberId" /></label></div>
+        <div><label>Policy holder / employer<input data-k="insurance.holder" /></label></div>
+        <div><label>Pre-authorisation no.<input data-k="insurance.preauthNo" /></label></div>
+        <div><label>Claim no.<input data-k="insurance.claimNo" /></label></div>
+        <div><label>Coverage class<input data-k="insurance.coverage" placeholder="e.g. Semi-private, Gold" /></label></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Encounter</h2>
+      <div class="grid">
+        <div><label>Invoice no.<input data-k="invoice.no" /></label></div>
+        <div><label>Invoice date<input type="date" data-k="invoice.date" /></label></div>
+        <div><label>Currency<input data-k="invoice.currency" /></label></div>
+        <div><label>Admission date<input type="date" data-k="encounter.admit" /></label></div>
+        <div><label>Discharge date<input type="date" data-k="encounter.discharge" /></label></div>
+        <div><label>Patient type<input data-k="encounter.type" list="ptypes" /></label></div>
+        <div><label>Admission source<input data-k="encounter.source" list="sources" /></label></div>
+        <div><label>Discharge disposition<input data-k="encounter.disposition" list="dispos" /></label></div>
+        <div><label>Attending physician<input data-k="encounter.attending" /></label></div>
+        <div><label>Specialty<input data-k="encounter.specialty" /></label></div>
+        <div><label>Physician licence / syndicate no.<input data-k="encounter.license" /></label></div>
+        <div><label>Invoice total as printed (for reconciliation)<input type="number" step="0.01" data-k="invoice.printedTotal" /></label></div>
+      </div>
+      <datalist id="ptypes"><option>Inpatient (Med/Surg)</option><option>Inpatient (ICU)</option><option>Day case</option><option>Outpatient</option><option>Emergency only</option></datalist>
+      <datalist id="sources"><option>Emergency department</option><option>Physician referral</option><option>Transfer from another facility</option><option>Elective</option></datalist>
+      <datalist id="dispos"><option>Discharged home – improved</option><option>Discharged home – stable</option><option>Transferred</option><option>Left against medical advice</option><option>Deceased</option></datalist>
+    </div>
+
+    <div class="card">
+      <h2><span class="grow">Diagnoses (ICD-10)</span><button class="small" id="addDx">+ Add diagnosis</button></h2>
+      <div class="scroll"><table class="edit" id="dxTable">
+        <thead><tr><th style="width:120px">Rank</th><th style="width:110px">ICD-10</th><th>Description</th><th style="width:150px">Onset</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="grow">Clinical summary</span><button class="small" id="btnDraft" title="Fill empty fields with a draft built from diagnoses and charges">✎ Auto-draft empty fields</button></h2>
+      <p class="hint">Auto-draft only writes into empty boxes and marks clinical facts it cannot know with “[ ]”. The treating physician must review every field before signing.</p>
+      <div class="grid">
+        <div class="wide"><label>Chief complaint / reason for admission<textarea data-k="clinical.complaint"></textarea></label></div>
+        <div class="wide"><label>History of present illness<textarea data-k="clinical.history"></textarea></label></div>
+        <div class="wide"><label>Examination findings on admission (vitals, hydration, abdomen…)<textarea data-k="clinical.exam"></textarea></label></div>
+        <div class="wide"><label>Key investigation results<textarea data-k="clinical.results"></textarea></label></div>
+        <div class="wide"><label>Hospital course &amp; treatment<textarea data-k="clinical.course" style="min-height:100px"></textarea></label></div>
+        <div class="wide"><label>Medical necessity statement<textarea data-k="clinical.necessity" style="min-height:100px"></textarea></label></div>
+        <div><label>Condition at discharge<textarea data-k="clinical.discharge"></textarea></label></div>
+        <div><label>Discharge medications<textarea data-k="clinical.dischargeMeds"></textarea></label></div>
+        <div><label>Follow-up plan<textarea data-k="clinical.followUp"></textarea></label></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="grow">Itemized charges</span><button class="small" id="addSection">+ Add category</button></h2>
+      <p class="hint">Amount = Qty × Unit price (calculated). Add a short justification per category — it appears in the report next to the charges.</p>
+      <div id="sections"></div>
+    </div>
+
+    <div class="card">
+      <h2>Settlement</h2>
+      <div class="grid">
+        <div><label>Discount / contractual adjustment<input type="number" step="0.01" data-k="settlement.discount" /></label></div>
+        <div><label>Non-covered items<input type="number" step="0.01" data-k="settlement.nonCovered" /></label></div>
+        <div><label>Deductible<input type="number" step="0.01" data-k="settlement.deductible" /></label></div>
+        <div><label>Co-insurance (%)<input type="number" step="0.1" data-k="settlement.copayPct" /></label></div>
+        <div><label>Already paid by patient<input type="number" step="0.01" data-k="settlement.paidByPatient" /></label></div>
+      </div>
+      <div class="totals" id="totalsBox" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Report options &amp; sign-off</h2>
+      <div class="grid">
+        <div><label>Report date<input type="date" data-k="report.date" /></label></div>
+        <div><label>Prepared by<input data-k="report.preparedBy" /></label></div>
+        <div><label>Itemization in report<select data-k="report.detail"><option value="full">Full line items</option><option value="summary">Category totals only</option></select></label></div>
+        <div><label>Report language note / remarks<input data-k="report.remarks" /></label></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= PREVIEW ================= -->
+  <div id="preview" class="hidden">
+    <div class="no-print" style="text-align:center;margin-bottom:12px">
+      <button class="primary" onclick="window.print()">🖨 Print / Save as PDF</button>
+      <button onclick="showTab('edit')">← Back to editing</button>
+    </div>
+    <div id="report"></div>
+  </div>
+</main>
+
+<dialog id="importDlg">
+  <h3 style="margin-top:0">Import invoice text</h3>
+  <p class="hint">Open the itemized invoice PDF, select all text (Ctrl+A), copy, and paste it below. Lines that end with <b>Qty · Unit price · Amount</b> become line items; ALL-CAPS headings become categories. ICD-10 diagnosis lines are picked up too. Review the result afterwards.</p>
+  <textarea id="importText" placeholder="Paste invoice text here…"></textarea>
+  <p>
+    <label style="display:inline"><input type="checkbox" id="importReplace" checked style="width:auto" /> Replace existing charges &amp; diagnoses</label>
+  </p>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button onclick="document.getElementById('importDlg').close()">Cancel</button>
+    <button class="primary" id="importGo">Import</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+const STORE_KEY = "medicalReportGenerator.case.v1";
+
+function blankCase() {
+  return {
+    provider: { name: "", department: "", address: "", phone: "", fax: "", license: "" },
+    patient: { name: "", dob: "", sex: "", mrn: "", nationalId: "", phone: "", guardian: "", address: "" },
+    insurance: { company: "", tpa: "", policyNo: "", memberId: "", holder: "", preauthNo: "", claimNo: "", coverage: "" },
+    invoice: { no: "", date: "", currency: "EGP", printedTotal: "" },
+    encounter: { admit: "", discharge: "", type: "", source: "", disposition: "", attending: "", specialty: "", license: "" },
+    diagnoses: [{ rank: "Primary", code: "", desc: "", onset: "On admission" }],
+    clinical: { complaint: "", history: "", exam: "", results: "", course: "", necessity: "", discharge: "", dischargeMeds: "", followUp: "" },
+    sections: [],
+    settlement: { discount: "", nonCovered: "", deductible: "", copayPct: "", paidByPatient: "" },
+    report: { date: new Date().toISOString().slice(0, 10), preparedBy: "", detail: "full", remarks: "" }
+  };
+}
+
+let state = load() || blankCase();
+
+/* ---------- helpers ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const num = v => { const n = parseFloat(String(v ?? "").replace(/,/g, "")); return isFinite(n) ? n : 0; };
+const money = v => num(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const getPath = (o, p) => p.split(".").reduce((a, k) => (a ? a[k] : undefined), o);
+const setPath = (o, p, v) => { const ks = p.split("."); const last = ks.pop(); ks.reduce((a, k) => (a[k] ??= {}), o)[last] = v; };
+function fmtDate(d) {
+  if (!d) return "";
+  const t = new Date(d + "T00:00:00");
+  return isNaN(t) ? d : t.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+function ageAt(dob, at) {
+  if (!dob) return null;
+  const b = new Date(dob + "T00:00:00"), a = at ? new Date(at + "T00:00:00") : new Date();
+  if (isNaN(b) || isNaN(a)) return null;
+  let y = a.getFullYear() - b.getFullYear();
+  if (a.getMonth() < b.getMonth() || (a.getMonth() === b.getMonth() && a.getDate() < b.getDate())) y--;
+  return y;
+}
+function losDays() {
+  const a = new Date(state.encounter.admit + "T00:00:00"), d = new Date(state.encounter.discharge + "T00:00:00");
+  if (isNaN(a) || isNaN(d)) return null;
+  return Math.round((d - a) / 86400000);
+}
+const lineAmt = it => Math.round(num(it.qty) * num(it.unit) * 100) / 100;
+const secTotal = s => s.items.reduce((t, it) => t + lineAmt(it), 0);
+const cur = () => state.invoice.currency || "";
+
+function totals() {
+  const gross = state.sections.reduce((t, s) => t + secTotal(s), 0);
+  const st = state.settlement;
+  const eligible = Math.max(0, gross - num(st.discount) - num(st.nonCovered));
+  const afterDed = Math.max(0, eligible - num(st.deductible));
+  const coins = afterDed * num(st.copayPct) / 100;
+  const patientShare = num(st.nonCovered) + Math.min(eligible, num(st.deductible)) + coins;
+  const claimed = Math.max(0, afterDed - coins);
+  return { gross, eligible, patientShare, claimed, balance: patientShare - num(st.paidByPatient) };
+}
+
+/* ---------- persistence ---------- */
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {} }
+function load() {
+  try { const s = localStorage.getItem(STORE_KEY); return s ? merge(blankCase(), JSON.parse(s)) : null; } catch (e) { return null; }
+}
+function merge(base, data) {
+  for (const k in data) {
+    if (data[k] && typeof data[k] === "object" && !Array.isArray(data[k]) && base[k] && typeof base[k] === "object") merge(base[k], data[k]);
+    else base[k] = data[k];
+  }
+  return base;
+}
+
+/* ---------- simple bound fields ---------- */
+function bindFields() {
+  document.querySelectorAll("[data-k]").forEach(el => {
+    el.value = getPath(state, el.dataset.k) ?? "";
+    el.oninput = () => { setPath(state, el.dataset.k, el.value); changed(false); };
+  });
+}
+
+/* ---------- diagnoses ---------- */
+function renderDx() {
+  const tb = $("#dxTable tbody");
+  tb.innerHTML = "";
+  state.diagnoses.forEach((d, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><select data-f="rank"><option>Primary</option><option>Secondary</option><option>Complication</option><option>Comorbidity</option></select></td>
+      <td><input data-f="code" placeholder="A05.9" /></td>
+      <td><input data-f="desc" /></td>
+      <td><input data-f="onset" list="onsets" /></td>
+      <td><button class="small danger" title="Remove">✕</button></td>`;
+    tr.querySelectorAll("[data-f]").forEach(el => {
+      el.value = d[el.dataset.f] ?? "";
+      el.oninput = () => { d[el.dataset.f] = el.dataset.f === "code" ? el.value.toUpperCase() : el.value; changed(false); };
+    });
+    tr.querySelector("button").onclick = () => { state.diagnoses.splice(i, 1); renderDx(); changed(); };
+    tb.appendChild(tr);
+  });
+  if (!$("#onsets")) document.body.insertAdjacentHTML("beforeend", `<datalist id="onsets"><option>On admission</option><option>During stay</option><option>Pre-existing</option></datalist>`);
+}
+
+/* ---------- charges ---------- */
+function renderSections() {
+  const host = $("#sections");
+  host.innerHTML = "";
+  state.sections.forEach((s, si) => {
+    const box = document.createElement("div");
+    box.className = "section-box";
+    box.innerHTML = `
+      <div class="section-head">
+        <input data-s="title" placeholder="Category, e.g. Laboratory" />
+        <button class="small" data-a="up" title="Move up">↑</button>
+        <button class="small" data-a="down" title="Move down">↓</button>
+        <button class="small danger" data-a="del" title="Delete category">✕</button>
+      </div>
+      <div class="scroll"><table class="edit">
+        <thead><tr><th style="width:62px">Rev.</th><th style="width:110px">CPT/HCPCS</th><th style="width:96px">Date(s)</th><th>Description</th><th style="width:62px">Qty</th><th style="width:110px">Unit price</th><th style="width:110px;text-align:right">Amount</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <button class="small" data-a="add">+ Add line</button>
+        <div class="subtotal">Subtotal: <span data-sub></span> ${esc(cur())}</div>
+      </div>
+      <label style="margin-top:8px">Justification for this category (shown in report)<textarea data-s="justification" style="min-height:44px"></textarea></label>`;
+    box.querySelectorAll("[data-s]").forEach(el => {
+      el.value = s[el.dataset.s] ?? "";
+      el.oninput = () => { s[el.dataset.s] = el.value; changed(false); };
+    });
+    const tb = box.querySelector("tbody");
+    const sub = box.querySelector("[data-sub]");
+    const refreshSub = () => { sub.textContent = money(secTotal(s)); };
+    s.items.forEach((it, ii) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input data-f="rev" /></td><td><input data-f="code" /></td><td><input data-f="dates" /></td>
+        <td><input data-f="desc" /></td><td><input data-f="qty" type="number" step="any" /></td>
+        <td><input data-f="unit" type="number" step="0.01" /></td><td class="num" data-amt></td>
+        <td><button class="small danger" title="Remove line">✕</button></td>`;
+      const amt = tr.querySelector("[data-amt]");
+      amt.textContent = money(lineAmt(it));
+      tr.querySelectorAll("[data-f]").forEach(el => {
+        el.value = it[el.dataset.f] ?? "";
+        el.oninput = () => { it[el.dataset.f] = el.value; amt.textContent = money(lineAmt(it)); refreshSub(); changed(false); };
+      });
+      tr.querySelector("button").onclick = () => { s.items.splice(ii, 1); renderSections(); changed(); };
+      tb.appendChild(tr);
+    });
+    refreshSub();
+    box.querySelector('[data-a="add"]').onclick = () => { s.items.push({ rev: "", code: "", dates: "", desc: "", qty: 1, unit: "" }); renderSections(); changed(); };
+    box.querySelector('[data-a="del"]').onclick = () => { if (confirm(`Delete category “${s.title || "untitled"}” and its ${s.items.length} line(s)?`)) { state.sections.splice(si, 1); renderSections(); changed(); } };
+    box.querySelector('[data-a="up"]').onclick = () => { if (si > 0) { [state.sections[si - 1], state.sections[si]] = [state.sections[si], state.sections[si - 1]]; renderSections(); changed(); } };
+    box.querySelector('[data-a="down"]').onclick = () => { if (si < state.sections.length - 1) { [state.sections[si + 1], state.sections[si]] = [state.sections[si], state.sections[si + 1]]; renderSections(); changed(); } };
+    host.appendChild(box);
+  });
+}
+
+function renderTotals() {
+  const t = totals(), c = esc(cur());
+  $("#totalsBox").innerHTML = `
+    <span>Gross charges</span><span class="t">${money(t.gross)} ${c}</span>
+    <span>Eligible after discount / non-covered</span><span class="t">${money(t.eligible)} ${c}</span>
+    <span>Patient responsibility</span><span class="t">${money(t.patientShare)} ${c}</span>
+    <span>Balance due from patient</span><span class="t">${money(t.balance)} ${c}</span>
+    <span class="big">Amount claimed from insurer</span><span class="t big">${money(t.claimed)} ${c}</span>`;
+}
+
+/* ---------- clinical knowledge used by checks & drafting ---------- */
+const allItems = () => state.sections.flatMap(s => s.items.map(it => ({ ...it, section: s.title })));
+const hasCode = re => allItems().some(it => re.test(it.code || ""));
+const hasDx = re => state.diagnoses.some(d => re.test(d.code || ""));
+const findItems = re => allItems().filter(it => re.test(`${it.code} ${it.desc}`));
+const dxList = () => state.diagnoses.filter(d => d.code || d.desc);
+const dxRef = (re, short) => dxList().filter(d => re.test(d.code)).map(d => short ? d.code : `${d.desc} (${d.code})`).join(", ");
+
+// Rationale templates: when items matching `items` are billed, explain them with diagnoses matching `dx`.
+const RATIONALE = [
+  { items: /\b(J7030|J7120|J7040|J7050)\b|saline|ringer|IV fluid|rehydration/i, dx: /^E86|^A0|^R11|^K52/, text: d => `IV rehydration was required for ${d}; oral intake was not tolerated/insufficient [confirm].` },
+  { items: /\bE87|potassium chloride|J3480/i, dx: /^E87/, text: d => `Electrolyte replacement and serial chemistry monitoring for ${d}.` },
+  { items: /\b(J2405|J1260|J2550)\b|ondansetron|antiemetic/i, dx: /^R11|^A0/, text: d => `Antiemetic therapy for ${d}.` },
+  { items: /\b(J0744|S0030|J0696|J0290)\b|ciprofloxacin|metronidazole|ceftriaxone|antimicrob|antibiot/i, dx: /^A0|^A41|^R65/, text: d => `Empirical IV antimicrobial therapy for ${d} pending culture/PCR results [state clinical criteria, e.g. fever, bloody stool, sepsis concern].` },
+  { items: /\b(87040|87045|87507|87493|87177)\b|culture|pathogen panel|parasite/i, dx: /^A0|^R50|^K52/, text: d => `Microbiological work-up to identify the causative organism of ${d} and to guide antimicrobial therapy.` },
+  { items: /\b(74177|74176|74178|74150|74160)\b|CT .*abdomen/i, dx: /^R10|^A0/, text: d => `CT abdomen/pelvis to exclude surgical or complicated intra-abdominal pathology given ${d} [state exam findings, e.g. tenderness, guarding].` },
+  { items: /\b(93306|93000|84484|83880)\b|telemetry|echocardi|troponin|natriuretic|electrocardiogram/i, dx: /^E87|^I|^R00|^R07|^R55/, text: d => `Cardiac monitoring and evaluation in the setting of ${d} [document ECG changes / arrhythmia / clinical indication].` },
+  { items: /\b(71045|71046)\b|chest radiograph/i, dx: /^R0|^J|^I/, text: d => `Chest radiograph for ${d}.` },
+  { items: /\b(99284|99285|99283)\b/, dx: /./, text: d => `Emergency evaluation on presentation with ${d}.` },
+  { items: /\b(99221|99222|99223)\b/, dx: /./, text: () => `Inpatient admission was required due to severity of illness and need for IV therapy and monitoring.` }
+];
+
+/* ---------- pre-submission checks ---------- */
+function runChecks() {
+  const out = [];
+  const add = (lvl, msg) => out.push({ lvl, msg });
+  const req = [
+    ["patient.name", "Patient name"], ["patient.dob", "Patient date of birth"], ["patient.mrn", "Medical record no. (MRN)"],
+    ["insurance.company", "Insurance company"], ["insurance.policyNo", "Policy no."], ["insurance.memberId", "Member / card ID"],
+    ["encounter.admit", "Admission date"], ["encounter.discharge", "Discharge date"], ["encounter.attending", "Attending physician"],
+    ["provider.name", "Hospital name"], ["invoice.no", "Invoice no."]
+  ];
+  const missing = req.filter(([k]) => !String(getPath(state, k) ?? "").trim() || /^n\/?a$/i.test(String(getPath(state, k)).trim())).map(([, l]) => l);
+  if (missing.length) add("error", `Missing required information: ${missing.join(", ")}.`);
+  if (!state.insurance.preauthNo) add("warn", "No pre-authorisation number entered — most insurers require one for inpatient admissions (emergency admissions usually need notification within 24–48 h).");
+
+  const prim = state.diagnoses.filter(d => d.rank === "Primary");
+  if (prim.length !== 1) add("error", `There must be exactly one primary diagnosis (found ${prim.length}).`);
+  state.diagnoses.forEach(d => {
+    if (d.code && !/^[A-TV-Z][0-9][0-9A-Z](\.[0-9A-Z]{1,4})?$/.test(d.code)) add("warn", `ICD-10 code “${d.code}” does not look valid.`);
+    if (!d.code && d.desc) add("warn", `Diagnosis “${d.desc}” has no ICD-10 code.`);
+  });
+
+  const los = losDays();
+  if (los !== null) {
+    if (los < 0) add("error", "Discharge date is before admission date.");
+    const room = allItems().filter(it => /^01[1-6]\d$|^020\d|^021\d/.test(it.rev || "") || /room|per diem|bed/i.test(it.desc || ""));
+    room.filter(it => /room|accommodation/i.test(it.desc || "")).forEach(it => {
+      if (num(it.qty) > Math.max(los, 1)) add("error", `Room charged for ${it.qty} days but length of stay is ${los} night(s).`);
+    });
+  }
+
+  const age = ageAt(state.patient.dob, state.encounter.admit);
+  if (age !== null && age < 18) {
+    add("info", `Paediatric patient (age ${age} at admission). Make sure the guardian's name and weight-based dosing are documented.`);
+    findItems(/floxacin|J0744|J2280|J1956/i).forEach(it => add("warn", `Fluoroquinolone (${it.desc.split(/[—-]/)[0].trim()}) given to a patient under 18 — insurers routinely query this; document why a non-fluoroquinolone alternative was not appropriate.`));
+    findItems(/doxycycline|tetracycline/i).forEach(() => { if (age < 8) add("warn", "Tetracycline-class drug in a child under 8 — document justification."); });
+    findItems(/paracetamol|acetaminophen/i).forEach(it => { const mg = /(\d{3,4})\s*mg/i.exec(it.desc); if (mg && +mg[1] > 500) add("info", `${it.desc.split(/[—-]/)[0].trim()} per dose in a ${age}-year-old — record body weight to support the dose.`); });
+  }
+
+  const cardiac = findItems(/\b(93306|84484|83880)\b|telemetry|echocardi|troponin|natriuretic/i);
+  if (cardiac.length && !hasDx(/^I|^R00|^R07|^R55|^R94\.3/)) {
+    const lyte = hasDx(/^E87/);
+    add("warn", `Cardiac work-up billed (${[...new Set(cardiac.map(c => c.code || c.desc.slice(0, 20)))].join(", ")}) without a cardiac diagnosis. ${lyte ? "Electrolyte disturbance (E87.x) is coded — state the ECG/rhythm findings that justified telemetry, echo and cardiac markers, or add the relevant code (e.g. R94.31 abnormal ECG, I49.9 arrhythmia)." : "Add a supporting diagnosis or a written justification."}`);
+  }
+  if (hasCode(/^9928[1-5]$/) && hasCode(/^9922[1-3]$/)) add("info", "ED visit (9928x) and initial inpatient care (9922x) billed on the same day — some payers bundle these when the same physician group admits. Keep both notes available.");
+  if (findItems(/\b74177\b/).length && !findItems(/Q99(6[5-7])|contrast/i).length) add("info", "Contrast CT billed without a contrast-medium line.");
+
+  allItems().forEach(it => {
+    if (!it.desc) add("warn", `A line in “${it.section}” has no description.`);
+    if (num(it.qty) <= 0 || num(it.unit) <= 0) add("warn", `“${(it.desc || "line").slice(0, 50)}” has zero quantity or price.`);
+  });
+  const noCode = allItems().filter(it => !it.code && !/room|per diem/i.test(it.desc)).length;
+  if (noCode) add("info", `${noCode} line(s) have no CPT/HCPCS code (common for oral medicines) — some insurers require a drug code or NDC/barcode.`);
+  state.sections.forEach(s => { if (s.items.length && !String(s.justification || "").trim()) add("info", `Category “${s.title}” has no justification text.`); });
+
+  const t = totals();
+  const printed = num(state.invoice.printedTotal);
+  if (printed) {
+    if (Math.abs(printed - t.gross) > 0.009) add("error", `Calculated total ${money(t.gross)} does not match the invoice total ${money(printed)} (difference ${money(t.gross - printed)}).`);
+    else add("ok", `Calculated total matches the invoice total (${money(printed)} ${cur()}).`);
+  }
+  ["complaint", "course", "necessity"].forEach(k => { if (!String(state.clinical[k] || "").trim()) add("warn", `Clinical summary: “${{ complaint: "Chief complaint", course: "Hospital course", necessity: "Medical necessity" }[k]}” is empty.`); });
+  const brackets = Object.values(state.clinical).join(" ").match(/\[[^\]]*\]/g);
+  if (brackets) add("warn", `${brackets.length} “[ ]” placeholder(s) in the clinical summary still need the physician's input.`);
+  if (!out.some(o => o.lvl === "error" || o.lvl === "warn")) add("ok", "No blocking issues found.");
+  return out;
+}
+
+function renderChecks() {
+  const order = { error: 0, warn: 1, info: 2, ok: 3 };
+  const icons = { error: "⛔", warn: "⚠️", info: "ℹ️", ok: "✅" };
+  $("#checks").innerHTML = runChecks().sort((a, b) => order[a.lvl] - order[b.lvl]).map(c => `<li class="${c.lvl}">${icons[c.lvl]} ${esc(c.msg)}</li>`).join("");
+}
+
+/* ---------- auto-draft ---------- */
+function autoDraft() {
+  const c = state.clinical;
+  const dx = dxList();
+  const prim = dx.find(d => d.rank === "Primary") || dx[0];
+  const sec = dx.filter(d => d !== prim);
+  const age = ageAt(state.patient.dob, state.encounter.admit);
+  const los = losDays();
+  const who = `${age !== null ? age + "-year-old " : ""}${(state.patient.sex || "").toLowerCase() || "patient"}`.trim();
+  const symptoms = dx.filter(d => /^R/.test(d.code)).map(d => d.desc.toLowerCase());
+
+  if (!c.complaint && prim) c.complaint = `${symptoms.length ? symptoms.join("; ") : prim.desc}.`.replace(/^./, m => m.toUpperCase());
+  if (!c.history && prim) c.history = `${who.replace(/^./, m => m.toUpperCase())} presented to the ${state.encounter.source || state.provider.department || "emergency department"} on ${fmtDate(state.encounter.admit)} with ${symptoms.length ? symptoms.join(", ") : prim.desc.toLowerCase()} of [ ] duration, after [suspected food exposure / onset details]. Number of vomiting/diarrhoea episodes: [ ]. Relevant history: [ ].`;
+  if (!c.exam) c.exam = "Temp [ ] °C, HR [ ] bpm, BP [ ] mmHg, RR [ ], SpO₂ [ ] %, weight [ ] kg.\nHydration: [degree of dehydration, mucous membranes, capillary refill].\nAbdomen: [tenderness, guarding, bowel sounds].";
+  if (!c.results) {
+    const groups = [];
+    const pick = (re, label) => { if (findItems(re).length) groups.push(`${label}: [ ]`); };
+    pick(/\b85025\b|CBC/i, "CBC (WBC/Hb/Plt)"); pick(/\b80053\b|metabolic panel/i, "Electrolytes/renal (Na/K/Cr/urea)");
+    pick(/\b86140\b|CRP/i, "CRP"); pick(/\b83605\b|lact/i, "Lactate"); pick(/\b87507\b|pathogen panel/i, "GI PCR panel");
+    pick(/\b87045\b|stool culture/i, "Stool culture"); pick(/\b87040\b|blood culture/i, "Blood cultures");
+    pick(/\b84484\b|troponin/i, "Troponin"); pick(/\b9300\d\b|electrocardiogram/i, "ECG"); pick(/\b93306\b|echocardi/i, "Echocardiogram");
+    pick(/\b7417\d\b|CT /i, "CT abdomen/pelvis"); pick(/\b7104\d\b|chest radiograph/i, "Chest X-ray");
+    c.results = groups.join("\n");
+  }
+  if (!c.course) {
+    const meds = findItems(/\b[JS]\d{4}\b|mg|mEq|mL/i).filter(it => /^02[5-6]/.test(it.rev || "") || /^[JS]\d{4}$/.test(it.code || "") || /mg|mEq/i.test(it.desc))
+      .map(it => `${it.desc.split(/\s[—–-]\s/)[0].trim()} (${it.dates || "dates [ ]"})`);
+    const tests = state.sections.filter(s => /lab|imag|diagnos|cardiac|radiol/i.test(s.title)).map(s => s.title.toLowerCase().replace(/\s*\(.*\)/, ""));
+    c.course = `Admitted as ${(state.encounter.type || "inpatient").toLowerCase()} on ${fmtDate(state.encounter.admit)} for ${prim ? `${prim.desc} (${prim.code})` : "[diagnosis]"}${sec.length ? `, with ${sec.map(d => `${d.desc.toLowerCase()} (${d.code})`).join(", ")}` : ""}.\n` +
+      (tests.length ? `Work-up included ${tests.join(", ")}.\n` : "") +
+      (meds.length ? `Treatment: ${meds.join("; ")}.\n` : "") +
+      `Clinical response: [ ]. Discharged on ${fmtDate(state.encounter.discharge)}${los !== null ? ` after ${los} day(s)` : ""}, ${(state.encounter.disposition || "[disposition]").toLowerCase()}.`;
+  }
+  if (!c.necessity) {
+    const lines = [];
+    RATIONALE.forEach(r => { if (findItems(r.items).length) { const d = dxRef(r.dx); if (d || r.dx.source === ".") lines.push("• " + r.text(d || (prim ? `${prim.desc} (${prim.code})` : "the presenting condition"))); } });
+    c.necessity = `Hospitalisation was medically necessary because [the patient could not maintain oral hydration / required IV therapy and monitoring].\n` + lines.join("\n");
+  }
+  if (!c.discharge) c.discharge = "Stable, afebrile, tolerating oral intake, electrolytes [normalised]. [ ]";
+  if (!c.followUp) c.followUp = "Outpatient review in [ ] days; repeat electrolytes [ ]; return if symptoms recur.";
+  state.sections.forEach(s => {
+    if (s.justification) return;
+    const hits = RATIONALE.filter(r => s.items.some(it => r.items.test(`${it.code} ${it.desc}`)))
+      .map(r => r.text(dxRef(r.dx, true) || (prim ? prim.code : "the presenting condition")));
+    if (/room|board|nursing/i.test(s.title)) hits.unshift(`Inpatient accommodation for ${los ?? "[ ]"} day(s) at the coverage class specified, as required for IV therapy and monitoring.`);
+    if (hits.length) s.justification = [...new Set(hits)].join(" ");
+  });
+  renderAll();
+}
+
+/* ---------- report ---------- */
+function buildReport() {
+  const s = state, c = esc(cur());
+  const t = totals();
+  const age = ageAt(s.patient.dob, s.encounter.admit);
+  const los = losDays();
+  const kv = (label, v) => `<div><span>${esc(label)}:</span> ${v ? esc(v) : '<span class="r-empty">—</span>'}</div>`;
+  const text = (label, v) => v && v.trim() ? `<div class="r-text"><b>${esc(label)}</b>${esc(v)}</div>` : "";
+
+  let charges = "";
+  if (s.report.detail === "summary") {
+    charges = `<table class="r"><thead><tr><th>Category</th><th class="n">Lines</th><th class="n">Amount (${c})</th></tr></thead><tbody>` +
+      s.sections.map(x => `<tr><td>${esc(x.title)}${x.justification ? `<div style="color:#555;font-size:10px">${esc(x.justification)}</div>` : ""}</td><td class="n">${x.items.length}</td><td class="n">${money(secTotal(x))}</td></tr>`).join("") +
+      `</tbody></table>`;
+  } else {
+    charges = `<table class="r"><thead><tr><th>Rev.</th><th>CPT/HCPCS</th><th>Date(s)</th><th>Description</th><th class="n">Qty</th><th class="n">Unit (${c})</th><th class="n">Amount (${c})</th></tr></thead><tbody>` +
+      s.sections.map(x => `<tr class="cat"><td colspan="7">${esc(x.title)}</td></tr>` +
+        (x.justification ? `<tr><td colspan="7" style="color:#444;font-style:italic">Justification: ${esc(x.justification)}</td></tr>` : "") +
+        x.items.map(it => `<tr><td>${esc(it.rev)}</td><td>${esc(it.code)}</td><td>${esc(it.dates)}</td><td>${esc(it.desc)}</td><td class="n">${esc(it.qty)}</td><td class="n">${money(it.unit)}</td><td class="n">${money(lineAmt(it))}</td></tr>`).join("") +
+        `<tr class="sub"><td colspan="6" class="n">Subtotal — ${esc(x.title)}</td><td class="n">${money(secTotal(x))}</td></tr>`).join("") +
+      `</tbody></table>`;
+  }
+
+  const st = s.settlement;
+  const settleRows = [
+    ["Gross charges", t.gross],
+    num(st.discount) ? ["Less: discount / contractual adjustment", -num(st.discount)] : null,
+    num(st.nonCovered) ? ["Less: non-covered items", -num(st.nonCovered)] : null,
+    ["Patient responsibility (deductible, co-insurance, non-covered)", t.patientShare],
+    num(st.paidByPatient) ? ["Already paid by patient", num(st.paidByPatient)] : null
+  ].filter(Boolean);
+
+  $("#report").innerHTML = `
+    <div class="r-head">
+      <div>
+        <h1>${esc(s.provider.name) || "Hospital"}</h1>
+        <div>${esc(s.provider.department)}</div>
+        <div>${esc(s.provider.address)}</div>
+        <div>${s.provider.phone ? "Tel " + esc(s.provider.phone) : ""}${s.provider.fax ? " · Fax " + esc(s.provider.fax) : ""}${s.provider.license ? " · Lic. " + esc(s.provider.license) : ""}</div>
+      </div>
+      <div class="r-title">
+        <b>MEDICAL REPORT &amp; INSURANCE CLAIM</b>
+        <div>Invoice ${esc(s.invoice.no)} · ${esc(fmtDate(s.invoice.date))}</div>
+        ${s.insurance.claimNo ? `<div>Claim ${esc(s.insurance.claimNo)}</div>` : ""}
+        <div>Report date: ${esc(fmtDate(s.report.date))}</div>
+      </div>
+    </div>
+
+    <div class="r-sec"><h3>Patient &amp; insurance</h3>
+      <div class="r-kv">
+        ${kv("Patient", s.patient.name)}
+        ${kv("Date of birth", fmtDate(s.patient.dob) + (age !== null ? ` (age ${age})` : ""))}
+        ${kv("Sex", s.patient.sex)}
+        ${kv("MRN", s.patient.mrn)}
+        ${kv("National ID", s.patient.nationalId)}
+        ${s.patient.guardian ? kv("Guardian", s.patient.guardian) : kv("Phone", s.patient.phone)}
+        ${kv("Insurer", s.insurance.company + (s.insurance.tpa ? " / TPA: " + s.insurance.tpa : ""))}
+        ${kv("Policy no.", s.insurance.policyNo)}
+        ${kv("Member ID", s.insurance.memberId)}
+        ${kv("Policy holder", s.insurance.holder)}
+        ${kv("Pre-auth no.", s.insurance.preauthNo)}
+        ${kv("Coverage", s.insurance.coverage)}
+      </div>
+    </div>
+
+    <div class="r-sec"><h3>Encounter</h3>
+      <div class="r-kv">
+        ${kv("Admission", fmtDate(s.encounter.admit))}
+        ${kv("Discharge", fmtDate(s.encounter.discharge))}
+        ${kv("Length of stay", los !== null ? los + " day(s)" : "")}
+        ${kv("Patient type", s.encounter.type)}
+        ${kv("Admission source", s.encounter.source)}
+        ${kv("Disposition", s.encounter.disposition)}
+        ${kv("Attending physician", s.encounter.attending)}
+        ${kv("Specialty", s.encounter.specialty)}
+        ${kv("Licence no.", s.encounter.license)}
+      </div>
+    </div>
+
+    <div class="r-sec"><h3>Diagnoses</h3>
+      <table class="r"><thead><tr><th>Rank</th><th>ICD-10</th><th>Diagnosis</th><th>Onset</th></tr></thead><tbody>
+        ${dxList().map(d => `<tr><td>${esc(d.rank)}</td><td><b>${esc(d.code)}</b></td><td>${esc(d.desc)}</td><td>${esc(d.onset)}</td></tr>`).join("")}
+      </tbody></table>
+    </div>
+
+    <div class="r-sec"><h3>Clinical summary</h3>
+      ${text("Chief complaint / reason for admission", s.clinical.complaint)}
+      ${text("History of present illness", s.clinical.history)}
+      ${text("Examination on admission", s.clinical.exam)}
+      ${text("Key investigation results", s.clinical.results)}
+      ${text("Hospital course & treatment", s.clinical.course)}
+      ${text("Condition at discharge", s.clinical.discharge)}
+      ${text("Discharge medications", s.clinical.dischargeMeds)}
+      ${text("Follow-up", s.clinical.followUp)}
+    </div>
+
+    ${s.clinical.necessity ? `<div class="r-sec"><h3>Medical necessity</h3>${text("", s.clinical.necessity)}</div>` : ""}
+
+    <div class="r-sec"><h3>Itemized charges</h3>${charges}</div>
+
+    <div class="r-sec"><h3>Claim summary</h3>
+      <table class="r" style="max-width:420px;margin-left:auto"><tbody>
+        ${settleRows.map(([l, v]) => `<tr><td>${esc(l)}</td><td class="n">${money(v)} ${c}</td></tr>`).join("")}
+        <tr class="cat"><td>AMOUNT CLAIMED FROM INSURER</td><td class="n">${money(t.claimed)} ${c}</td></tr>
+      </tbody></table>
+    </div>
+
+    ${s.report.remarks ? `<div class="r-sec"><h3>Remarks</h3><div class="r-text">${esc(s.report.remarks)}</div></div>` : ""}
+
+    <div class="r-sec">
+      <p style="font-size:10.5px">I certify that the services listed above were medically necessary, were provided to the patient named, and that the clinical information in this report is accurate to the best of my knowledge.</p>
+      <div class="r-sign">
+        <div>Attending physician<br><b>${esc(s.encounter.attending)}</b>${s.encounter.license ? `<br>Lic. ${esc(s.encounter.license)}` : ""}<br>Signature &amp; date:</div>
+        <div>Medical director / authorised signatory<br><br>Signature &amp; date:</div>
+        <div>Official hospital stamp</div>
+      </div>
+    </div>
+    <div class="r-foot"><span>${esc(s.provider.name)} · Prepared by ${esc(s.report.preparedBy) || "—"}</span><span>Confidential medical information</span></div>`;
+}
+
+/* ---------- invoice text import ---------- */
+function importInvoice(txt, replace) {
+  const lines = txt.split(/\r?\n/);
+  const sections = [], dx = [];
+  let curSec = null, lastItem = null;
+  const NUM = "([\\d,]+(?:\\.\\d+)?)";
+  const itemRe = new RegExp(`^\\s*(\\d{4})\\s+(\\S+(?:\\s*\\/\\s*\\S+)?|—|-)\\s+(.+?)\\s+(\\d+(?:\\.\\d+)?)\\s+${NUM}\\s+${NUM}\\s*$`);
+  const dateRe = /^(Days?\s+[\d,\s–\-]+\d|Day\s+\d+|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})\s+(.*)$/i;
+  const dxRe = /^\s*(Primary|Secondary|Principal|Additional)?\s*([A-TV-Z]\d[0-9A-Z](?:\.[0-9A-Z]{1,4})?)\s{2,}(.+?)(?:\s{2,}(On admission|During stay|Pre-existing|[A-Za-z ]+))?\s*$/;
+  for (const raw of lines) {
+    const line = raw.replace(/\t/g, "  ");
+    const m = itemRe.exec(line);
+    if (m) {
+      if (!curSec) { curSec = { title: "Charges", justification: "", items: [] }; sections.push(curSec); }
+      let rest = m[3].trim(), dates = "";
+      const dm = dateRe.exec(rest);
+      if (dm) { dates = dm[1].trim(); rest = dm[2].trim(); }
+      lastItem = { rev: m[1], code: /^[—-]$/.test(m[2]) ? "" : m[2].replace(/\s+/g, " "), dates, desc: rest, qty: m[4], unit: String(num(m[5])) };
+      curSec.items.push(lastItem);
+      continue;
+    }
+    const d = dxRe.exec(line);
+    if (d && /\S/.test(d[3]) && !/\d{3,},/.test(line)) {
+      dx.push({ rank: /second|addit/i.test(d[1] || "") ? "Secondary" : (dx.length ? "Secondary" : "Primary"), code: d[2], desc: d[3].trim(), onset: (d[4] || "On admission").trim() });
+      lastItem = null; continue;
+    }
+    const trimmed = line.trim();
+    if (/^[A-Z][A-Z0-9 ,&/()\-–—]{5,}$/.test(trimmed) && !/ITEMIZED|INVOICE|TOTAL|^PROVIDER|^PATIENT|^ENCOUNTER|^DIAGNOSES$|HOSPITAL BILL|^REV|AMOUNT|SIGNATURE|STAMP|\s{3,}/.test(trimmed)) {
+      curSec = { title: trimmed.replace(/\s+/g, " ").toLowerCase().replace(/(^|[\s(\/&,-])([a-z])/g, (a, p, ch) => p + ch.toUpperCase()).replace(/\b(Ct|Iv|Cat)\b/g, w => w.toUpperCase()), justification: "", items: [] };
+      sections.push(curSec); lastItem = null; continue;
+    }
+    // continuation of a wrapped description: indented text with no numbers at the end
+    if (lastItem && /^\s{20,}\S/.test(line) && !/\d[\d,]*\.\d\d\s*$/.test(line) && !/Subtotal/i.test(line) && trimmed.length < 90) {
+      lastItem.desc += " " + trimmed;
+    } else if (trimmed) lastItem = null;
+  }
+  const filled = sections.filter(s => s.items.length);
+  // header fields
+  const grab = re => { const m = re.exec(txt); return m ? m[1].trim() : ""; };
+  const toISO = s => { const t = new Date(s); return isNaN(t) ? "" : new Date(t.getTime() - t.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+  const titleCase = w => w.toLowerCase().replace(/(^|\s)(\S)/g, (a, p, ch) => p + ch.toUpperCase());
+  const hosp = grab(/^\s*([A-Z][A-Z .&'-]{3,}?)(?:\s{2,}|$)/m); if (hosp && !state.provider.name) state.provider.name = titleCase(hosp);
+  const addr = grab(/Address:\s*(.+?)(?:\s{2,}|$)/m); if (addr && !state.provider.address) state.provider.address = addr;
+  const tel = grab(/Contact:\s*([+\d][\d\s]+\d)/); if (tel && !state.provider.phone) state.provider.phone = tel;
+  const fax = grab(/Fax:\s*([+\d][\d\s]+\d)/); if (fax && !state.provider.fax) state.provider.fax = fax;
+  const inv = grab(/INVOICE\s+NO\.?\s*([A-Z0-9\-\/]+)/i); if (inv) state.invoice.no = inv;
+  const invDate = grab(/Invoice Date:\s*([0-9]{1,2}\s+\w{3,9}\s+\d{4})/i); if (invDate) state.invoice.date = toISO(invDate);
+  const pn = grab(/Patient Name:\s*(.+?)(?:\s{2,}|$)/m); if (pn) state.patient.name = pn;
+  const dob = grab(/Date of Birth:\s*([0-9]{1,2}\s+\w{3,9}\s+\d{4})/i); if (dob) state.patient.dob = toISO(dob);
+  const dos = /Date of Service:\s*([0-9]{1,2}\s+\w{3,9}\s+\d{4})\s*[–-]\s*([0-9]{1,2}\s+\w{3,9}\s+\d{4})/i.exec(txt);
+  if (dos) { state.encounter.admit = toISO(dos[1]); state.encounter.discharge = toISO(dos[2]); }
+  const ptype = grab(/Patient Type:\s*(.+?)(?:\s{2,}|$)/m); if (ptype) state.encounter.type = ptype;
+  const total = grab(/TOTAL[^\d\n]*([\d,]+\.\d\d)/); if (total) state.invoice.printedTotal = String(num(total));
+  const curm = grab(/\b(EGP|USD|EUR|SAR|AED|GBP)\b/); if (curm) state.invoice.currency = curm;
+
+  if (replace) { state.sections = filled; if (dx.length) state.diagnoses = dx; }
+  else { state.sections.push(...filled); state.diagnoses.push(...dx); }
+  return { items: filled.reduce((n, s) => n + s.items.length, 0), sections: filled.length, dx: dx.length };
+}
+
+/* ---------- UI wiring ---------- */
+function renderAll() { bindFields(); renderDx(); renderSections(); changed(); }
+let tmr;
+function changed(full = true) {
+  save();
+  renderTotals();
+  clearTimeout(tmr);
+  tmr = setTimeout(renderChecks, full ? 0 : 250);
+  if (full) renderChecks();
+}
+function showTab(t) {
+  const prev = t === "preview";
+  $("#editor").classList.toggle("hidden", prev);
+  $("#preview").classList.toggle("hidden", !prev);
+  $("#tabEdit").classList.toggle("on", !prev);
+  $("#tabPreview").classList.toggle("on", prev);
+  if (prev) buildReport();
+  window.scrollTo(0, 0);
+}
+$("#tabEdit").onclick = () => showTab("edit");
+$("#tabPreview").onclick = () => showTab("preview");
+$("#btnPrint").onclick = () => { buildReport(); showTab("preview"); setTimeout(() => window.print(), 50); };
+$("#btnNew").onclick = () => { if (confirm("Start a new blank case? Unsaved data in this browser will be cleared (use “Save case” first if needed).")) { state = blankCase(); renderAll(); } };
+$("#btnSave").onclick = () => {
+  const name = `${state.invoice.no || "case"}_${(state.patient.name || "patient").replace(/\s+/g, "_")}.json`.replace(/[^\w.\-]/g, "");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: "application/json" }));
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$("#btnOpen").onclick = () => $("#fileInput").click();
+$("#fileInput").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(t => { try { state = merge(blankCase(), JSON.parse(t)); renderAll(); showTab("edit"); } catch (err) { alert("Could not read this file: " + err.message); } });
+  e.target.value = "";
+};
+$("#btnImport").onclick = () => $("#importDlg").showModal();
+$("#importGo").onclick = () => {
+  const r = importInvoice($("#importText").value, $("#importReplace").checked);
+  $("#importDlg").close(); renderAll(); showTab("edit");
+  alert(`Imported ${r.items} line item(s) in ${r.sections} categor${r.sections === 1 ? "y" : "ies"} and ${r.dx} diagnosis code(s).\nPlease review the data and the pre-submission checks.`);
+};
+$("#addDx").onclick = () => { state.diagnoses.push({ rank: state.diagnoses.length ? "Secondary" : "Primary", code: "", desc: "", onset: "On admission" }); renderDx(); changed(); };
+$("#addSection").onclick = () => { state.sections.push({ title: "", justification: "", items: [{ rev: "", code: "", dates: "", desc: "", qty: 1, unit: "" }] }); renderSections(); changed(); };
+$("#btnDraft").onclick = autoDraft;
+window.addEventListener("beforeprint", buildReport);
+
+renderAll();
+</script>
+</body>
+</html>
